@@ -4,7 +4,11 @@
   "description": "A simple CRUD server with Express",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test store.test.js config.test.js e2e.test.js",
+    "test:unit": "node --test store.test.js config.test.js",
+    "test:e2e": "node --test e2e.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 store.test.js config.test.js e2e.test.js"
   },
   "dependencies": {
     "express": "^4.21.2"

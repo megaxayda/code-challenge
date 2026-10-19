@@ -11,6 +11,17 @@ npm start
 
 Server starts at http://localhost:3000
 
+## Test
+
+Uses Node's built-in test runner, no extra dependencies.
+
+```bash
+npm test             # all tests
+npm run test:unit    # unit tests (store.test.js, config.test.js)
+npm run test:e2e     # end-to-end tests over real HTTP (e2e.test.js)
+npm run coverage     # all tests + coverage report, fails below 100%
+```
+
 ## Endpoints
 
 | Method | Path         | What it does                              |
