@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Layered App Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a stacked layer diagram up top, then one section per topic. Each layer owns a hue that follows it through the page. */
+:root {
+  --bg: #f5f6f3;
+  --surface: #ffffff;
+  --ink: #1b2124;
+  --muted: #5b666b;
+  --line: #d9ddd8;
+  --accent: #1f6f5c;
+  --l-client: #3b6fb6;
+  --l-edge: #7a57b0;
+  --l-api: #b5642a;
+  --l-app: #1f7a5e;
+  --l-data: #a13d5a;
+  --l-ops: #5f6b70;
+  --tint: 12%;
+  --good: #2f7d4a;
+  --warn: #9a6a00;
+  --bad: #b03a2e;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121618; --surface: #1a2023; --ink: #e6ebe8; --muted: #9aa6a8; --line: #2c3539; --accent: #5cc4a6;
+    --l-client: #78a6e8; --l-edge: #b294e0; --l-api: #e69a5f; --l-app: #5cc4a0; --l-data: #e07a98; --l-ops: #a3b0b4;
+    --tint: 18%; --good: #6cc78b; --warn: #e0b54a; --bad: #ec7b6e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121618; --surface: #1a2023; --ink: #e6ebe8; --muted: #9aa6a8; --line: #2c3539; --accent: #5cc4a6;
+  --l-client: #78a6e8; --l-edge: #b294e0; --l-api: #e69a5f; --l-app: #5cc4a0; --l-data: #e07a98; --l-ops: #a3b0b4;
+  --tint: 18%; --good: #6cc78b; --warn: #e0b54a; --bad: #ec7b6e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.6;
+}
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+  display: grid; gap: 64px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 800; line-height: 1.05; }
+h2 { font-size: 1.75rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); max-width: 62ch; font-size: 1.05rem; }
+a { color: var(--accent); }
+code { font-family: var(--f-mono); font-size: 0.86em; padding: 1px 5px; border-radius: 4px; background: color-mix(in srgb, var(--line) 55%, transparent); overflow-wrap: anywhere; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Header + nav */
+header { display: grid; gap: 14px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+nav.toc a {
+  font-family: var(--f-mono); font-size: 0.8rem; text-decoration: none; color: var(--ink);
+  border: 1px solid var(--line); background: var(--surface); padding: 4px 10px; border-radius: 999px;
+}
+nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+section { display: grid; gap: 20px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 6px; }
+
+/* Diagram */
+.diagram { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 14px; }
+.stack { display: grid; gap: 0; }
+.layer {
+  --c: var(--l-client);
+  display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; align-items: center;
+  background: color-mix(in srgb, var(--c) var(--tint), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-left: 6px solid var(--c);
+  border-radius: 10px; padding: 14px 16px; text-decoration: none; color: var(--ink);
+  transition: transform .15s ease;
+}
+.layer:hover { transform: translateX(4px); }
+.layer .name { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c); line-height: 1.2; }
+.layer .name small { display: block; font-family: var(--f-mono); font-weight: 400; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: var(--f-mono); font-size: 0.75rem; padding: 2px 8px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); white-space: nowrap;
+}
+.arrow { height: 22px; display: grid; place-items: center; color: var(--muted); font-family: var(--f-mono); font-size: 0.72rem; }
+.arrow span::before { content: "↓ "; }
+.side {
+  --c: var(--l-ops);
+  border: 1px dashed color-mix(in srgb, var(--c) 70%, transparent); border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 8%, var(--surface));
+  display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 14px 12px; text-align: center;
+  text-decoration: none; color: var(--ink);
+}
+.side .name { font-family: var(--f-display); font-weight: 800; color: var(--c); line-height: 1.2; }
+.side .chips { justify-content: center; }
+.legend { font-size: 0.85rem; color: var(--muted); }
+
+/* Request flow */
+.flow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.flow li {
+  counter-increment: step; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  font-size: 0.86rem; display: grid; gap: 4px; align-content: start;
+}
+.flow li::before { content: counter(step); font-family: var(--f-mono); font-size: 0.75rem; color: var(--accent); font-weight: 500; }
+.flow b { font-weight: 600; }
+
+/* Layer detail cards */
+.layers-detail { display: grid; gap: 16px; }
+.ldetail {
+  --c: var(--l-client);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  scroll-margin-top: 16px;
+}
+.ldetail-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--c) var(--tint), var(--surface));
+}
+.ldetail-head h3 { color: var(--c); font-size: 1.2rem; font-weight: 800; }
+.ldetail-head p { color: var(--muted); font-size: 0.9rem; }
+.stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stage { padding: 14px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.stage + .stage { border-left: 1px solid var(--line); }
+.stage .tag { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c); }
+.stage ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.9rem; }
+.stage li::marker { color: var(--c); }
+
+.c-client { --c: var(--l-client); } .c-edge { --c: var(--l-edge); } .c-api { --c: var(--l-api); }
+.c-app { --c: var(--l-app); } .c-data { --c: var(--l-data); } .c-ops { --c: var(--l-ops); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--line) 35%, var(--surface)); }
+td:first-child { font-weight: 600; min-width: 150px; }
+td code { white-space: nowrap; }
+td .sub { display: block; font-weight: 400; font-size: 0.78rem; color: var(--muted); font-family: var(--f-mono); }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: 0.7rem; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.pick { color: var(--accent); }
+.dots { font-family: var(--f-mono); letter-spacing: 2px; white-space: nowrap; color: var(--ink); }
+.dots .off { color: var(--line); }
+.pros { color: var(--good); } .cons { color: var(--bad); }
+
+.callout {
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-radius: 12px; padding: 14px 18px; display: grid; gap: 4px; font-size: 0.93rem;
+}
+.callout strong { font-family: var(--f-display); font-size: 1rem; }
+
+/* Security grid */
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box h3 { display: flex; align-items: center; gap: 8px; }
+.box h3::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--c, var(--accent)); flex: none; }
+.check { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.9rem; }
+.check li { position: relative; padding-left: 22px; }
+.check li::before { content: "✓"; position: absolute; left: 2px; top: 0; color: var(--good); font-weight: 600; }
+.check b { font-weight: 600; }
+
+/* Performance */
+.perf { display: grid; gap: 10px; }
+.perf-row {
+  display: grid; grid-template-columns: 34px minmax(0, 1.3fr) minmax(0, 2fr) 120px; gap: 14px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px;
+}
+.perf-row .rank { font-family: var(--f-mono); color: var(--accent); font-size: 0.85rem; }
+.perf-row .what { font-weight: 600; }
+.perf-row .what small { display: block; font-weight: 400; font-family: var(--f-mono); font-size: 0.74rem; color: var(--muted); }
+.perf-row .how { font-size: 0.88rem; color: var(--muted); }
+.meter { display: grid; gap: 4px; font-family: var(--f-mono); font-size: 0.7rem; color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; }
+.bar.pay i { background: var(--good); }
+.bar.cost i { background: var(--warn); }
+
+.targets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.target { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.target .v { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.target .k { font-size: 0.82rem; color: var(--muted); }
+
+/* Option cards (used by the extended sections) */
+.group { display: grid; gap: 10px; }
+.group-title { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+/* Column count follows the item count so no row is left half empty */
+.opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.opts:has(> .opt:nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; min-width: 0; font-size: 0.88rem; }
+.opt h3 { font-size: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.opt .kv { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 6px; }
+.opt .kv span:first-child { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+.opt .kv.minus span:last-child { color: var(--muted); }
+.opt.is-pick { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.cost-ladder { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pyramid { display: grid; gap: 6px; justify-items: center; }
+.pyr { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 8px; font-size: 0.86rem; max-width: 100%; min-width: min(100%, 300px);
+  background: color-mix(in srgb, var(--l-app) var(--tint), var(--surface)); border: 1px solid color-mix(in srgb, var(--l-app) 40%, transparent); }
+.pyr b { font-weight: 600; }
+.pyr span { color: var(--muted); font-family: var(--f-mono); font-size: 0.74rem; text-align: right; }
+.adr { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; font-family: var(--f-mono); font-size: 0.82rem; line-height: 1.55; overflow-x: auto; white-space: pre-wrap; margin: 0; color: var(--ink); }
+.adr .h { color: var(--accent); font-weight: 500; }
+@media (max-width: 900px) { .opts:has(> .opt:nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .opts, .opts:has(> .opt:nth-child(4):last-child) { grid-template-columns: minmax(0, 1fr); }
+  .cost-ladder { grid-template-columns: minmax(0, 1fr); }
+  .pyr { width: 100% !important; }
+}
+
+footer { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 860px) {
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .targets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .perf-row { grid-template-columns: 28px minmax(0, 1fr) 110px; }
+  .perf-row .how { grid-column: 2 / -1; grid-row: 2; }
+}
+@media (max-width: 640px) {
+  .diagram { grid-template-columns: minmax(0, 1fr); }
+  .layer { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .stages { grid-template-columns: minmax(0, 1fr); }
+  .stage + .stage { border-left: 0; border-top: 1px solid var(--line); }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .perf-row { grid-template-columns: 24px minmax(0, 1fr); }
+  .perf-row .meter { grid-column: 2; }
+  .perf-row .how { grid-column: 2; grid-row: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .layer { transition: none; } .layer:hover { transform: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Software architecture · reference design</span>
+  <h1>Layered App Architecture</h1>
+  <p class="lede">A simple, proven shape for a web or mobile product. Six layers, each with one job. Start small with the left-hand column of every layer, and grow only when real traffic or real requirements push you there.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#overview">Overview</a>
+    <a href="#flow">Request flow</a>
+    <a href="#layers">Layers &amp; growth</a>
+    <a href="#auth">Authentication</a>
+    <a href="#db">Databases</a>
+    <a href="#security">Security</a>
+    <a href="#performance">Performance</a>
+    <a href="#reliability">Reliability</a>
+    <a href="#comms">Communication</a>
+    <a href="#consistency">Consistency</a>
+    <a href="#deploy">Deployment</a>
+    <a href="#privacy">Privacy &amp; tenancy</a>
+    <a href="#cost">Cost</a>
+    <a href="#api">API design</a>
+    <a href="#testing">Testing</a>
+    <a href="#adr">Decisions</a>
+  </nav>
+</header>
+
+<!-- OVERVIEW DIAGRAM -->
+<section id="overview">
+  <div class="sec-head">
+    <span class="eyebrow">The big picture</span>
+    <h2>Six layers, top to bottom</h2>
+    <p class="lede">A request travels down the stack and the response comes back up. Each layer only talks to the one beneath it. Click a layer to jump to its details.</p>
+  </div>
+
+  <div class="diagram">
+    <div class="stack">
+      <a class="layer c-client" href="#l-client">
+        <div class="name">Client<small>what users touch</small></div>
+        <div class="chips"><span class="chip">Web app (React / Vue)</span><span class="chip">Mobile app</span><span class="chip">3rd-party integrations</span></div>
+      </a>
+      <div class="arrow"><span>HTTPS</span></div>
+      <a class="layer c-edge" href="#l-edge">
+        <div class="name">Edge<small>first line of defense</small></div>
+        <div class="chips"><span class="chip">DNS</span><span class="chip">CDN</span><span class="chip">WAF</span><span class="chip">Load balancer</span><span class="chip">TLS</span></div>
+      </a>
+      <div class="arrow"><span>filtered traffic</span></div>
+      <a class="layer c-api" href="#l-api">
+        <div class="name">API Gateway<small>the front door</small></div>
+        <div class="chips"><span class="chip">Routing</span><span class="chip">Auth check</span><span class="chip">Rate limits</span><span class="chip">Validation</span></div>
+      </a>
+      <div class="arrow"><span>trusted request</span></div>
+      <a class="layer c-app" href="#l-app">
+        <div class="name">Application<small>business logic</small></div>
+        <div class="chips"><span class="chip">Controllers</span><span class="chip">Services</span><span class="chip">Domain rules</span><span class="chip">Background workers</span></div>
+      </a>
+      <div class="arrow"><span>queries &amp; events</span></div>
+      <a class="layer c-data" href="#l-data">
+        <div class="name">Data<small>state that lasts</small></div>
+        <div class="chips"><span class="chip">Primary DB</span><span class="chip">Cache</span><span class="chip">File storage</span><span class="chip">Message queue</span></div>
+      </a>
+    </div>
+    <a class="side c-ops" href="#l-ops">
+      <div class="name">Observability &amp; DevOps</div>
+      <div class="chips"><span class="chip">Logs</span><span class="chip">Metrics</span><span class="chip">Traces</span><span class="chip">CI/CD</span><span class="chip">Secrets</span></div>
+      <p class="legend">Runs across every layer</p>
+    </a>
+  </div>
+</section>
+
+<!-- REQUEST FLOW -->
+<section id="flow">
+  <div class="sec-head">
+    <span class="eyebrow">Example</span>
+    <h2>One request, step by step</h2>
+    <p class="lede">What happens when a signed-in user loads their dashboard.</p>
+  </div>
+  <ol class="flow">
+    <li><b>Browser</b> sends <code>GET /api/dashboard</code> with a session cookie or token.</li>
+    <li><b>CDN / WAF</b> blocks bad traffic, terminates TLS, forwards to the load balancer.</li>
+    <li><b>Gateway</b> verifies the token, checks the rate limit, validates input.</li>
+    <li><b>App service</b> checks permissions, then asks the cache for the data.</li>
+    <li><b>Cache miss</b> → read from the database, store the result in the cache.</li>
+    <li><b>Response</b> returns as JSON; logs, metrics and a trace are recorded.</li>
+  </ol>
+</section>
+
+<!-- LAYERS DETAIL -->
+<section id="layers">
+  <div class="sec-head">
+    <span class="eyebrow">What can be expanded</span>
+    <h2>Each layer, and how it grows</h2>
+    <p class="lede">Every layer has three stages. Most products live happily in Stage 1 for a long time. Move right only when you feel a specific pain.</p>
+  </div>
+
+  <div class="layers-detail">
+    <article class="ldetail c-client" id="l-client">
+      <div class="ldetail-head"><h3>Client</h3><p>Renders UI, holds short-lived UI state, calls the API.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>Single-page app (React, Vue) or server-rendered pages</li><li>One API client module</li><li>Form validation in the browser</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Server-side rendering (Next.js, Nuxt) for SEO and speed</li><li>Mobile apps sharing the same API</li><li>Design system and component library</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>Backend-for-frontend (BFF) per client type</li><li>Offline support and local sync</li><li>Micro-frontends for large teams</li></ul></div>
+      </div>
+    </article>
+
+    <article class="ldetail c-edge" id="l-edge">
+      <div class="ldetail-head"><h3>Edge</h3><p>Gets traffic to you fast and keeps bad traffic out.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>Managed DNS + free TLS certificate</li><li>CDN for static files (Cloudflare, CloudFront)</li><li>One load balancer</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Web Application Firewall rules</li><li>Bot and DDoS protection</li><li>Cache API responses at the edge</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>Multi-region with geo-routing</li><li>Edge functions for personalization</li><li>Automatic failover between regions</li></ul></div>
+      </div>
+    </article>
+
+    <article class="ldetail c-api" id="l-api">
+      <div class="ldetail-head"><h3>API Gateway</h3><p>One front door that applies the same rules to every request.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>Middleware inside the app (auth, CORS, validation)</li><li>REST with an OpenAPI spec</li><li>Simple per-IP rate limit</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Dedicated gateway (Kong, AWS API Gateway, Nginx)</li><li>Per-user and per-key quotas</li><li>API versioning (<code>/v1</code>, <code>/v2</code>)</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>GraphQL or gRPC where it fits</li><li>Service mesh (Istio, Linkerd) for internal traffic</li><li>Public developer portal</li></ul></div>
+      </div>
+    </article>
+
+    <article class="ldetail c-app" id="l-app">
+      <div class="ldetail-head"><h3>Application</h3><p>Where the business rules live. Keep it stateless so you can run many copies.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>One well-organized monolith</li><li>Folders by feature: controller → service → repository</li><li>Runs in a container</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Modular monolith with strict module boundaries</li><li>Background jobs for slow work (emails, reports)</li><li>Horizontal autoscaling</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>Split hot modules into microservices</li><li>Event-driven communication (Kafka, SNS/SQS)</li><li>Serverless functions for spiky workloads</li></ul></div>
+      </div>
+    </article>
+
+    <article class="ldetail c-data" id="l-data">
+      <div class="ldetail-head"><h3>Data</h3><p>The source of truth. The hardest layer to change later, so choose carefully.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>One managed relational DB (PostgreSQL)</li><li>Object storage for files (S3)</li><li>Automated daily backups</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Redis cache for hot reads</li><li>Read replicas</li><li>Message queue for async work</li><li>Search engine for full-text search</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>Sharding or partitioning</li><li>Separate analytics warehouse</li><li>Specialized stores per need (polyglot)</li></ul></div>
+      </div>
+    </article>
+
+    <article class="ldetail c-ops" id="l-ops">
+      <div class="ldetail-head"><h3>Observability &amp; DevOps</h3><p>How you know the system is healthy, and how you ship safely.</p></div>
+      <div class="stages">
+        <div class="stage"><span class="tag">Stage 1 · Start</span><ul><li>Structured JSON logs</li><li>Uptime check + error tracking (Sentry)</li><li>CI pipeline: test, build, deploy</li></ul></div>
+        <div class="stage"><span class="tag">Stage 2 · Grow</span><ul><li>Metrics dashboards and alerts (Prometheus, Grafana, Datadog)</li><li>Infrastructure as code (Terraform)</li><li>Staging environment</li></ul></div>
+        <div class="stage"><span class="tag">Stage 3 · Scale</span><ul><li>Distributed tracing (OpenTelemetry)</li><li>SLOs and error budgets</li><li>Blue/green or canary deploys</li></ul></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- AUTH -->
+<section id="auth">
+  <div class="sec-head">
+    <span class="eyebrow">Authentication options</span>
+    <h2>How users prove who they are</h2>
+    <p class="lede">Authentication answers <em>who are you?</em> Authorization answers <em>what are you allowed to do?</em> Pick one main login method, then add others as needed.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Option</th><th>Best for</th><th>Pros</th><th>Cons</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td>Session cookie<span class="sub">server-side session</span></td><td>Classic web apps on one domain</td><td class="pros">Simple; easy to revoke; HttpOnly cookie hides it from scripts</td><td class="cons">Needs shared session store when scaled; CSRF protection required</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>JWT access + refresh<span class="sub">stateless tokens</span></td><td>SPAs, mobile apps, multiple services</td><td class="pros">No DB lookup per request; works across services</td><td class="cons">Hard to revoke early; keep access tokens short (5–15 min)</td><td><span class="dots">●●<span class="off">●</span></span></td></tr>
+        <tr><td>OAuth 2.0 / OIDC <span class="pill pick">recommended</span><span class="sub">via identity provider</span></td><td>Most products; "Sign in with Google / Microsoft"</td><td class="pros">Outsource passwords, MFA, resets; standard and audited</td><td class="cons">Vendor cost and lock-in; more redirects to understand</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>Passkeys / WebAuthn<span class="sub">passwordless</span></td><td>Consumer apps that want strong, easy login</td><td class="pros">Phishing-resistant; no passwords to leak</td><td class="cons">Account recovery needs a careful fallback flow</td><td><span class="dots">●●<span class="off">●</span></span></td></tr>
+        <tr><td>Magic link / OTP<span class="sub">email or SMS code</span></td><td>Low-friction sign-up, infrequent users</td><td class="pros">No password; quick onboarding</td><td class="cons">Only as safe as the inbox; SMS can be hijacked</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>SAML / Enterprise SSO<span class="sub">Okta, Entra ID</span></td><td>B2B customers with IT departments</td><td class="pros">Required by many enterprise buyers; central offboarding</td><td class="cons">XML-heavy, per-customer setup</td><td><span class="dots">●●●</span></td></tr>
+        <tr><td>API keys<span class="sub">machine clients</span></td><td>Developers calling your API</td><td class="pros">Simple to issue and rotate</td><td class="cons">Long-lived secret; must hash at rest and scope permissions</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>mTLS / service tokens<span class="sub">service to service</span></td><td>Internal microservice calls</td><td class="pros">Strong identity between services; zero-trust ready</td><td class="cons">Certificate management overhead</td><td><span class="dots">●●●</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-3">
+    <div class="box" style="--c: var(--l-api)"><h3>Hosted providers</h3><p>Auth0, Clerk, AWS Cognito, Firebase Auth, Supabase Auth. Fastest route to secure login with MFA built in.</p></div>
+    <div class="box" style="--c: var(--l-app)"><h3>Self-hosted</h3><p>Keycloak, Ory, Authentik. Full control and no per-user fees, but you run and patch it.</p></div>
+    <div class="box" style="--c: var(--l-data)"><h3>Authorization models</h3><p><b>RBAC</b> (roles like admin, editor) to start. <b>ABAC</b> or <b>ReBAC</b> (OpenFGA, Cerbos) when permissions depend on ownership or teams.</p></div>
+  </div>
+
+  <div class="callout"><strong>Simple default</strong><p>Use an OIDC provider for login, issue short-lived tokens or an HttpOnly session cookie, enforce MFA for admins, and check roles in the application layer on every request.</p></div>
+</section>
+
+<!-- DB -->
+<section id="db">
+  <div class="sec-head">
+    <span class="eyebrow">Database options</span>
+    <h2>Pick storage by the shape of your data</h2>
+    <p class="lede">Start with one relational database. Add a specialized store only when a real query pattern needs it.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Store</th><th>Type</th><th>Use it for</th><th>Watch out for</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td>PostgreSQL <span class="pill pick">default</span></td><td>Relational (SQL)</td><td>Users, orders, anything with relationships and transactions. JSONB covers semi-structured data too.</td><td>Needs schema migrations; vertical scaling first, then replicas</td><td>RDS, Cloud SQL, Neon, Supabase</td></tr>
+        <tr><td>MySQL / MariaDB</td><td>Relational (SQL)</td><td>Same as above; huge ecosystem, simple replication</td><td>Fewer advanced types and features than Postgres</td><td>Aurora, PlanetScale</td></tr>
+        <tr><td>MongoDB</td><td>Document</td><td>Flexible, nested data that changes shape often; content catalogs</td><td>Joins and multi-document transactions are weaker</td><td>Atlas</td></tr>
+        <tr><td>DynamoDB / Cassandra</td><td>Key-value / wide-column</td><td>Massive scale with known access patterns (sessions, events, IoT)</td><td>You must design around queries up front; ad-hoc queries are hard</td><td>DynamoDB, ScyllaDB</td></tr>
+        <tr><td>Redis / Valkey</td><td>In-memory</td><td>Cache, sessions, rate-limit counters, leaderboards, pub/sub</td><td>Memory cost; treat as disposable unless persistence configured</td><td>ElastiCache, Upstash</td></tr>
+        <tr><td>Elasticsearch / OpenSearch</td><td>Search index</td><td>Full-text search, filters, log search</td><td>Not a source of truth; keep it in sync from the main DB</td><td>Elastic Cloud, Meilisearch</td></tr>
+        <tr><td>ClickHouse / BigQuery</td><td>Columnar analytics</td><td>Reports and dashboards over millions of rows</td><td>Slow for single-row updates</td><td>Snowflake, Redshift</td></tr>
+        <tr><td>Object storage</td><td>Blob</td><td>Images, uploads, backups, exports</td><td>Serve through a CDN with signed URLs, not from the app</td><td>S3, GCS, R2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-3">
+    <div class="box" style="--c: var(--l-data)"><h3>Data access</h3><ul class="check"><li>Use an ORM or query builder (Prisma, TypeORM, SQLAlchemy)</li><li>Repository pattern keeps SQL out of business logic</li><li>Versioned migrations in source control</li></ul></div>
+    <div class="box" style="--c: var(--l-data)"><h3>Reliability</h3><ul class="check"><li>Point-in-time recovery enabled</li><li>Test a restore, not only the backup</li><li>Multi-AZ standby for production</li></ul></div>
+    <div class="box" style="--c: var(--l-data)"><h3>Scaling path</h3><ul class="check"><li>Indexes and query tuning first</li><li>Then cache and read replicas</li><li>Partition or shard last</li></ul></div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section id="security">
+  <div class="sec-head">
+    <span class="eyebrow">Security</span>
+    <h2>Defense in depth, layer by layer</h2>
+    <p class="lede">No single control is enough. Each layer assumes the one above it might fail. The OWASP Top 10 is a good checklist to review against.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="box" style="--c: var(--l-client)"><h3>Client</h3><ul class="check"><li>Content-Security-Policy header</li><li>Tokens in HttpOnly, Secure, SameSite cookies, not localStorage</li><li>Never trust client validation alone</li><li>Escape output to prevent XSS</li></ul></div>
+    <div class="box" style="--c: var(--l-edge)"><h3>Edge</h3><ul class="check"><li>TLS 1.2+ everywhere, HSTS on</li><li>WAF with managed rule sets</li><li>DDoS and bot protection</li><li>Only the load balancer is public</li></ul></div>
+    <div class="box" style="--c: var(--l-api)"><h3>API Gateway</h3><ul class="check"><li>Validate every input against a schema</li><li>Rate limit per IP, user and key</li><li>Strict CORS allow-list</li><li>Uniform error messages that leak no internals</li></ul></div>
+    <div class="box" style="--c: var(--l-app)"><h3>Application</h3><ul class="check"><li>Check permissions on every action (least privilege)</li><li>Hash passwords with Argon2 or bcrypt</li><li>Scan dependencies (Dependabot, Snyk)</li><li>Audit log for sensitive actions</li></ul></div>
+    <div class="box" style="--c: var(--l-data)"><h3>Data</h3><ul class="check"><li>Parameterized queries only (no SQL injection)</li><li>Encrypt at rest and in transit</li><li>Database in a private subnet</li><li>Separate DB users with minimal grants</li></ul></div>
+    <div class="box" style="--c: var(--l-ops)"><h3>Operations</h3><ul class="check"><li>Secrets in a vault (AWS Secrets Manager, Vault)</li><li>MFA and SSO for all staff accounts</li><li>Alert on unusual login or error spikes</li><li>Regular patching and pen tests</li></ul></div>
+  </div>
+</section>
+
+<!-- PERFORMANCE -->
+<section id="performance">
+  <div class="sec-head">
+    <span class="eyebrow">Performance</span>
+    <h2>Levers, ranked by payoff for effort</h2>
+    <p class="lede">Measure first, then pull the cheapest lever that fixes the slow part. The top of this list fixes most real-world slowness.</p>
+  </div>
+
+  <div class="targets" aria-label="Example targets">
+    <div class="target"><span class="v">&lt; 200 ms</span><span class="k">API p95 latency</span></div>
+    <div class="target"><span class="v">&lt; 2.5 s</span><span class="k">Largest Contentful Paint</span></div>
+    <div class="target"><span class="v">&lt; 50 ms</span><span class="k">Typical DB query</span></div>
+    <div class="target"><span class="v">99.9%</span><span class="k">Monthly uptime</span></div>
+  </div>
+  <p class="legend">Example targets. Set your own from what users need.</p>
+
+  <div class="perf">
+    <div class="perf-row"><span class="rank">1</span><div class="what">Database indexes<small>Data</small></div><p class="how">Add indexes for your WHERE and JOIN columns. Use EXPLAIN to find slow queries and remove N+1 query loops.</p><div class="meter">payoff<div class="bar pay"><i style="width:95%"></i></div>effort<div class="bar cost"><i style="width:15%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">2</span><div class="what">CDN for static assets<small>Edge</small></div><p class="how">Serve JS, CSS and images from the CDN with long cache headers and hashed file names.</p><div class="meter">payoff<div class="bar pay"><i style="width:85%"></i></div>effort<div class="bar cost"><i style="width:15%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">3</span><div class="what">Caching hot reads<small>Data · Redis</small></div><p class="how">Cache-aside pattern with a sensible TTL. Invalidate on write. Cache expensive computations, not everything.</p><div class="meter">payoff<div class="bar pay"><i style="width:85%"></i></div>effort<div class="bar cost"><i style="width:40%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">4</span><div class="what">Pagination &amp; compression<small>API Gateway</small></div><p class="how">Never return unbounded lists. Use cursor pagination and gzip or Brotli responses.</p><div class="meter">payoff<div class="bar pay"><i style="width:70%"></i></div>effort<div class="bar cost"><i style="width:20%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">5</span><div class="what">Background jobs<small>Application · queue</small></div><p class="how">Move emails, image processing and reports to a queue so the user gets a fast response.</p><div class="meter">payoff<div class="bar pay"><i style="width:70%"></i></div>effort<div class="bar cost"><i style="width:40%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">6</span><div class="what">Connection pooling<small>Application → Data</small></div><p class="how">Reuse DB connections (PgBouncer or the driver's pool) so traffic spikes do not exhaust the database.</p><div class="meter">payoff<div class="bar pay"><i style="width:60%"></i></div>effort<div class="bar cost"><i style="width:20%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">7</span><div class="what">Horizontal scaling<small>Application</small></div><p class="how">Run more stateless app instances behind the load balancer and autoscale on CPU or request count.</p><div class="meter">payoff<div class="bar pay"><i style="width:65%"></i></div>effort<div class="bar cost"><i style="width:50%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">8</span><div class="what">Frontend optimization<small>Client</small></div><p class="how">Code splitting, lazy loading, responsive images, server-side rendering for first paint.</p><div class="meter">payoff<div class="bar pay"><i style="width:60%"></i></div>effort<div class="bar cost"><i style="width:50%"></i></div></div></div>
+    <div class="perf-row"><span class="rank">9</span><div class="what">Read replicas &amp; sharding<small>Data</small></div><p class="how">Send reads to replicas first. Shard only when a single primary can no longer handle writes.</p><div class="meter">payoff<div class="bar pay"><i style="width:75%"></i></div>effort<div class="bar cost"><i style="width:90%"></i></div></div></div>
+  </div>
+  <p class="legend">Payoff and effort bars are relative rankings for a typical web app, not measurements.</p>
+</section>
+
+<!-- RELIABILITY -->
+<section id="reliability">
+  <div class="sec-head">
+    <span class="eyebrow">Reliability</span>
+    <h2>Plan for parts failing</h2>
+    <p class="lede">Networks drop, services slow down, regions go offline. Design so one failure stays small.</p>
+  </div>
+  <div class="group">
+    <span class="group-title">Failure-handling patterns</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>Timeouts + retries <span class="pill pick">always</span></h3><div class="kv"><span>Use</span><span>Every network call. Retry with exponential backoff and jitter.</span></div><div class="kv minus"><span>Risk</span><span>Retrying non-idempotent calls can double-charge.</span></div></div>
+      <div class="opt is-pick"><h3>Idempotency keys <span class="pill pick">always</span></h3><div class="kv"><span>Use</span><span>Payments, orders, any write a client may resend.</span></div><div class="kv minus"><span>Risk</span><span>Needs a store of seen keys with expiry.</span></div></div>
+      <div class="opt"><h3>Circuit breaker</h3><div class="kv"><span>Use</span><span>Calls to flaky dependencies. Stop calling, fail fast, retry later.</span></div><div class="kv minus"><span>Risk</span><span>Thresholds need tuning.</span></div></div>
+      <div class="opt"><h3>Graceful degradation</h3><div class="kv"><span>Use</span><span>Non-core features (recommendations, avatars). Show a fallback.</span></div><div class="kv minus"><span>Risk</span><span>Every fallback path needs testing.</span></div></div>
+      <div class="opt"><h3>Bulkheads</h3><div class="kv"><span>Use</span><span>Separate pools or queues so one slow feature can't starve others.</span></div><div class="kv minus"><span>Risk</span><span>Some idle capacity.</span></div></div>
+      <div class="opt"><h3>Health checks</h3><div class="kv"><span>Use</span><span>Liveness and readiness probes so bad instances get replaced.</span></div><div class="kv minus"><span>Risk</span><span>Deep checks can cascade failures.</span></div></div>
+    </div>
+  </div>
+  <div class="group">
+    <span class="group-title">Disaster recovery options</span>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Strategy</th><th>Data loss (RPO)</th><th>Downtime (RTO)</th><th>Cost</th><th>Fits</th></tr></thead>
+        <tbody>
+          <tr><td>Backup &amp; restore</td><td>Hours</td><td>Hours</td><td><span class="dots">●<span class="off">●●●</span></span></td><td>Internal tools, early products</td></tr>
+          <tr><td>Pilot light</td><td>Minutes</td><td>Tens of minutes</td><td><span class="dots">●●<span class="off">●●</span></span></td><td>Most production apps</td></tr>
+          <tr><td>Warm standby</td><td>Seconds</td><td>Minutes</td><td><span class="dots">●●●<span class="off">●</span></span></td><td>Revenue-critical systems</td></tr>
+          <tr><td>Active-active multi-region</td><td>Near zero</td><td>Near zero</td><td><span class="dots">●●●●</span></td><td>Payments, global platforms</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNICATION -->
+<section id="comms">
+  <div class="sec-head">
+    <span class="eyebrow">Service communication</span>
+    <h2>Call now, or send a message</h2>
+    <p class="lede">Use a direct call when the user is waiting for the answer. Use a message when the work can happen a moment later.</p>
+  </div>
+  <div class="group">
+    <span class="group-title">Synchronous (request → response)</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>REST / HTTP <span class="pill pick">default</span></h3><div class="kv"><span>Use</span><span>Public and most internal APIs.</span></div><div class="kv minus"><span>Risk</span><span>Chatty calls add latency.</span></div></div>
+      <div class="opt"><h3>gRPC</h3><div class="kv"><span>Use</span><span>Fast, typed calls between internal services.</span></div><div class="kv minus"><span>Risk</span><span>Harder to debug; poor browser support.</span></div></div>
+      <div class="opt"><h3>GraphQL</h3><div class="kv"><span>Use</span><span>Many clients needing different shapes of data.</span></div><div class="kv minus"><span>Risk</span><span>Caching and query cost control.</span></div></div>
+    </div>
+  </div>
+  <div class="group">
+    <span class="group-title">Asynchronous (fire and continue)</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>Job queue <span class="pill pick">default</span></h3><div class="kv"><span>Use</span><span>Background work for one consumer. SQS, RabbitMQ, BullMQ.</span></div><div class="kv minus"><span>Risk</span><span>Need retries and a dead-letter queue.</span></div></div>
+      <div class="opt"><h3>Event stream</h3><div class="kv"><span>Use</span><span>Many consumers, replayable history. Kafka, Kinesis.</span></div><div class="kv minus"><span>Risk</span><span>Heavy to operate.</span></div></div>
+      <div class="opt"><h3>Pub/sub</h3><div class="kv"><span>Use</span><span>Fan-out notifications. SNS, Google Pub/Sub, Redis.</span></div><div class="kv minus"><span>Risk</span><span>Ordering not guaranteed.</span></div></div>
+      <div class="opt"><h3>Webhooks</h3><div class="kv"><span>Use</span><span>Telling external systems something happened.</span></div><div class="kv minus"><span>Risk</span><span>Sign payloads; receivers go offline.</span></div></div>
+    </div>
+  </div>
+  <div class="group">
+    <span class="group-title">Patterns that keep messaging safe</span>
+    <div class="opts">
+      <div class="opt"><h3>Outbox</h3><p>Write the event to a table in the same DB transaction, then publish it. The DB and the event never disagree.</p></div>
+      <div class="opt"><h3>Dead-letter queue</h3><p>Messages that keep failing move aside for inspection instead of blocking the queue.</p></div>
+      <div class="opt"><h3>Idempotent consumers</h3><p>Delivery is usually at-least-once, so handling the same message twice must be harmless.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSISTENCY -->
+<section id="consistency">
+  <div class="sec-head">
+    <span class="eyebrow">Data consistency</span>
+    <h2>When must data be exact right now?</h2>
+    <p class="lede">Money and inventory need strong consistency. Feeds, counters and search can be a few seconds behind.</p>
+  </div>
+  <div class="group">
+    <span class="group-title">Consistency models</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>ACID transactions <span class="pill pick">default</span></h3><div class="kv"><span>Use</span><span>Anything inside one database.</span></div><div class="kv minus"><span>Risk</span><span>Doesn't span services.</span></div></div>
+      <div class="opt"><h3>Eventual consistency</h3><div class="kv"><span>Use</span><span>Read models, search, caches, analytics.</span></div><div class="kv minus"><span>Risk</span><span>Users may briefly see old data.</span></div></div>
+      <div class="opt"><h3>Optimistic locking</h3><div class="kv"><span>Use</span><span>Concurrent edits. A version column rejects stale writes.</span></div><div class="kv minus"><span>Risk</span><span>Clients must handle conflicts.</span></div></div>
+      <div class="opt"><h3>Saga</h3><div class="kv"><span>Use</span><span>Multi-service workflows with compensating steps (refund, release stock).</span></div><div class="kv minus"><span>Risk</span><span>Complex; consider a workflow engine (Temporal).</span></div></div>
+    </div>
+  </div>
+  <div class="group">
+    <span class="group-title">Caching strategies</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>Cache-aside <span class="pill pick">default</span></h3><p>App reads cache, falls back to DB, fills cache. Delete the key on write.</p></div>
+      <div class="opt"><h3>Write-through</h3><p>Write to cache and DB together. Fresher reads, slower writes.</p></div>
+      <div class="opt"><h3>TTL only</h3><p>Let entries expire. Simplest, fine when slightly stale data is acceptable.</p></div>
+    </div>
+  </div>
+  <div class="callout"><strong>Zero-downtime schema changes</strong><p>Use expand → migrate → contract: add the new column, deploy code that writes both, backfill, switch reads, then drop the old column in a later release.</p></div>
+</section>
+
+<!-- DEPLOYMENT -->
+<section id="deploy">
+  <div class="sec-head">
+    <span class="eyebrow">Deployment &amp; environments</span>
+    <h2>Where it runs and how it ships</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Hosting</th><th>Best for</th><th>Pros</th><th>Cons</th><th>Ops effort</th></tr></thead>
+      <tbody>
+        <tr><td>PaaS<span class="sub">Render, Fly.io, Heroku</span></td><td>Small teams, MVPs</td><td class="pros">Push to deploy; little ops</td><td class="cons">Pricier at scale; less control</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>Managed containers <span class="pill pick">recommended</span><span class="sub">Cloud Run, ECS Fargate</span></td><td>Most production apps</td><td class="pros">Docker portability; autoscaling; no servers</td><td class="cons">Some cloud-specific setup</td><td><span class="dots">●●<span class="off">●</span></span></td></tr>
+        <tr><td>Kubernetes<span class="sub">EKS, GKE, AKS</span></td><td>Many services, platform team</td><td class="pros">Most flexible; huge ecosystem</td><td class="cons">Steep learning curve and upkeep</td><td><span class="dots">●●●</span></td></tr>
+        <tr><td>Serverless functions<span class="sub">Lambda, Cloudflare Workers</span></td><td>Spiky or event-driven work</td><td class="pros">Pay per use; scales to zero</td><td class="cons">Cold starts; time limits</td><td><span class="dots">●<span class="off">●●</span></span></td></tr>
+        <tr><td>Virtual machines<span class="sub">EC2, Droplets</span></td><td>Legacy or special hardware</td><td class="pros">Full control; predictable cost</td><td class="cons">You patch and scale it all</td><td><span class="dots">●●●</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="group">
+    <span class="group-title">Release strategies</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>Rolling <span class="pill pick">default</span></h3><p>Replace instances a few at a time. Simple; old and new run side by side briefly.</p></div>
+      <div class="opt"><h3>Blue / green</h3><p>Two full environments; switch traffic at once. Instant rollback, double cost during release.</p></div>
+      <div class="opt"><h3>Canary</h3><p>Send 1–5% of traffic to the new version, watch metrics, then expand.</p></div>
+      <div class="opt"><h3>Feature flags</h3><p>Ship code dark, turn on per user or percent. LaunchDarkly, Unleash, GrowthBook.</p></div>
+    </div>
+  </div>
+  <div class="callout"><strong>Environments</strong><p>Local → dev/preview (per pull request) → staging (production-like data shape) → production. Same container image promoted through each; only config differs.</p></div>
+</section>
+
+<!-- PRIVACY -->
+<section id="privacy">
+  <div class="sec-head">
+    <span class="eyebrow">Compliance, privacy &amp; tenancy</span>
+    <h2>Handle personal data deliberately</h2>
+  </div>
+  <div class="group">
+    <span class="group-title">Multi-tenancy options (B2B)</span>
+    <div class="opts">
+      <div class="opt is-pick"><h3>Shared tables <span class="pill pick">default</span></h3><div class="kv"><span>How</span><span><code>tenant_id</code> on every row, enforced with Postgres row-level security.</span></div><div class="kv minus"><span>Risk</span><span>One missed filter leaks data.</span></div></div>
+      <div class="opt"><h3>Schema per tenant</h3><div class="kv"><span>How</span><span>Same DB, separate schemas.</span></div><div class="kv minus"><span>Risk</span><span>Migrations run N times.</span></div></div>
+      <div class="opt"><h3>Database per tenant</h3><div class="kv"><span>How</span><span>Full isolation; per-customer region and backups.</span></div><div class="kv minus"><span>Risk</span><span>Highest cost and ops.</span></div></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="box" style="--c: var(--l-data)"><h3>Privacy basics</h3><ul class="check"><li>Collect only what you need</li><li>Retention rules and auto-deletion</li><li>Export and delete a user's data on request</li></ul></div>
+    <div class="box" style="--c: var(--l-ops)"><h3>Operational</h3><ul class="check"><li>Mask PII in logs and traces</li><li>Audit trail of who accessed what</li><li>Data residency (EU data stays in EU)</li></ul></div>
+    <div class="box" style="--c: var(--l-api)"><h3>Frameworks</h3><ul class="check"><li><b>GDPR</b> / CCPA: personal data rights</li><li><b>SOC 2</b>: B2B security trust</li><li><b>PCI DSS</b>: card data (use Stripe to avoid most of it)</li><li><b>HIPAA</b>: US health data</li></ul></div>
+  </div>
+</section>
+
+<!-- COST -->
+<section id="cost">
+  <div class="sec-head">
+    <span class="eyebrow">Cost</span>
+    <h2>Each stage costs more. Grow on purpose.</h2>
+  </div>
+  <div class="cost-ladder">
+    <div class="box" style="--c: var(--good)"><h3>Stage 1 · $</h3><p>Monolith, one DB, PaaS or managed containers. One person can run it.</p></div>
+    <div class="box" style="--c: var(--warn)"><h3>Stage 2 · $$</h3><p>Cache, replicas, queues, staging env, monitoring tools. Costs grow with each managed service.</p></div>
+    <div class="box" style="--c: var(--bad)"><h3>Stage 3 · $$$</h3><p>Microservices, multi-region, Kubernetes. Needs a platform team; people cost more than servers.</p></div>
+  </div>
+  <div class="group">
+    <span class="group-title">Cost levers</span>
+    <div class="opts">
+      <div class="opt"><h3>Right-sizing</h3><p>Match instance size to real usage. Review monthly.</p></div>
+      <div class="opt"><h3>Autoscaling</h3><p>Scale down at night and on weekends; scale to zero where possible.</p></div>
+      <div class="opt"><h3>Commit discounts</h3><p>Savings plans or reserved instances for steady baseline load.</p></div>
+      <div class="opt"><h3>Spot instances</h3><p>Cheap capacity for interruptible jobs and batch work.</p></div>
+      <div class="opt"><h3>Storage tiers</h3><p>Move old files and logs to cold storage; set log retention.</p></div>
+      <div class="opt"><h3>Tags + budgets</h3><p>Tag resources by team or feature and alert on budget overruns.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- API DESIGN -->
+<section id="api">
+  <div class="sec-head">
+    <span class="eyebrow">API design</span>
+    <h2>Conventions that make the API predictable</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Decision</th><th>Option A</th><th>Option B</th><th>Suggested</th></tr></thead>
+      <tbody>
+        <tr><td>Style</td><td>REST + OpenAPI</td><td>GraphQL / gRPC / tRPC</td><td>REST for public; tRPC if full-stack TypeScript</td></tr>
+        <tr><td>Pagination</td><td>Offset (<code>?page=3</code>)</td><td>Cursor (<code>?after=abc</code>)</td><td>Cursor: stable and fast on large tables</td></tr>
+        <tr><td>Versioning</td><td>URL (<code>/v1/</code>)</td><td>Header (<code>Api-Version</code>)</td><td>URL: visible and simple</td></tr>
+        <tr><td>Errors</td><td>Custom JSON shape</td><td>RFC 9457 Problem Details</td><td>RFC 9457: one standard shape</td></tr>
+        <tr><td>Safe retries</td><td>Client-generated IDs</td><td><code>Idempotency-Key</code> header</td><td>Header on all POSTs that create things</td></tr>
+        <tr><td>Rate-limit info</td><td><code>X-RateLimit-*</code></td><td><code>RateLimit</code> + <code>Retry-After</code></td><td>Standard headers + 429 status</td></tr>
+        <tr><td>Docs</td><td>Hand-written</td><td>Generated from OpenAPI</td><td>Generated, so they never drift</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- TESTING -->
+<section id="testing">
+  <div class="sec-head">
+    <span class="eyebrow">Testing strategy</span>
+    <h2>Many fast tests, few slow ones</h2>
+    <p class="lede">The test pyramid: wide base of quick unit tests, narrow top of slow end-to-end tests.</p>
+  </div>
+  <div class="pyramid" aria-label="Test pyramid">
+    <div class="pyr" style="width:34%"><b>End-to-end</b><span>Playwright, Cypress</span></div>
+    <div class="pyr" style="width:52%"><b>Contract</b><span>Pact, schema checks</span></div>
+    <div class="pyr" style="width:70%"><b>Integration</b><span>Testcontainers, real DB</span></div>
+    <div class="pyr" style="width:88%"><b>Unit</b><span>Jest, Vitest, pytest, JUnit</span></div>
+  </div>
+  <div class="group">
+    <span class="group-title">Beyond correctness</span>
+    <div class="opts">
+      <div class="opt"><h3>Load testing</h3><p>k6, Gatling, Locust. Run before launches and big changes.</p></div>
+      <div class="opt"><h3>Security testing</h3><p>SAST (Semgrep, CodeQL), dependency scans, DAST (OWASP ZAP).</p></div>
+      <div class="opt"><h3>Chaos testing</h3><p>Kill instances or add latency on purpose to prove the reliability patterns work.</p></div>
+      <div class="opt"><h3>Smoke tests</h3><p>A few checks right after each deploy; auto-rollback on failure.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADR -->
+<section id="adr">
+  <div class="sec-head">
+    <span class="eyebrow">Decision records</span>
+    <h2>Write down why, not only what</h2>
+    <p class="lede">An Architecture Decision Record (ADR) is a short note per big choice, kept in the repo. New teammates learn the reasoning; future you knows when to revisit.</p>
+  </div>
+  <div class="opts">
+    <div class="opt is-pick"><h3>ADR in repo <span class="pill pick">default</span></h3><p>Markdown files in <code>docs/adr/</code>, reviewed like code. Templates: MADR, Nygard.</p></div>
+    <div class="opt"><h3>RFC / design doc</h3><p>Longer proposal for large changes, discussed before building.</p></div>
+    <div class="opt"><h3>Tech radar</h3><p>Team-wide list of tools to adopt, trial, hold or retire.</p></div>
+  </div>
+<pre class="adr"><span class="h"># ADR-003: Use PostgreSQL as the primary database</span>
+<span class="h">Status:</span>   Accepted · 2026-10-19
+<span class="h">Context:</span>  Relational data (users, orders), need transactions, team knows SQL.
+<span class="h">Options:</span>  PostgreSQL · MySQL · MongoDB · DynamoDB
+<span class="h">Decision:</span> PostgreSQL on a managed service.
+<span class="h">Why:</span>      ACID, JSONB for flexible fields, mature tooling, easy hiring.
+<span class="h">Trade-off:</span> Must plan for read replicas/partitioning if writes grow a lot.
+<span class="h">Revisit:</span>  If a single primary exceeds ~70% CPU at peak.</pre>
+</section>
+
+<footer>Rule of thumb: keep it a well-structured monolith on one Postgres database until a measured problem says otherwise. Every layer above can grow independently when it does.</footer>
+
+</div>
+</body>
+</html>
