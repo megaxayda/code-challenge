@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Untangling Messy React</title>
+<meta name="description" content="A field guide to messy React code: how to identify, classify and fix problems from easy to hard, with a worked case study.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f6f6fa;
+  --surface: #ffffff;
+  --surface-2: #eff0f6;
+  --ink: #15161f;
+  --muted: #5b5e72;
+  --line: #dcdee9;
+  --code-bg: #f1f2f8;
+  --l1: #0f9b6c;
+  --l2: #b98900;
+  --l3: #d1621a;
+  --l4: #d23b3b;
+  --l5: #7a4fd6;
+  --accent: #3a5bd9;
+  --f-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0c14; --surface: #13141f; --surface-2: #1b1d2b; --ink: #eceef8; --muted: #9da1ba; --line: #282b3d; --code-bg: #0f1019;
+    --l1: #34d399; --l2: #facc15; --l3: #fb923c; --l4: #f87171; --l5: #a78bfa; --accent: #7d97ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0c14; --surface: #13141f; --surface-2: #1b1d2b; --ink: #eceef8; --muted: #9da1ba; --line: #282b3d; --code-bg: #0f1019;
+  --l1: #34d399; --l2: #facc15; --l3: #fb923c; --l4: #f87171; --l5: #a78bfa; --accent: #7d97ff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.65; }
+h1, h2, h3, h4 { font-family: var(--f-display); margin: 0; letter-spacing: -0.02em; text-wrap: balance; line-height: 1.15; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+code { font-family: var(--f-mono); font-size: .86em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.eyebrow { font-family: var(--f-mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.lede { color: var(--muted); font-size: 1.05rem; max-width: 64ch; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+section.block { padding: 72px 0 0; display: grid; gap: 24px; scroll-margin-top: 64px; }
+.sec-head { display: grid; gap: 10px; }
+
+/* Top nav */
+.topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 30; transition: background .3s, border-color .3s; border-bottom: 1px solid transparent; }
+.topnav.solid { background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom-color: var(--line); }
+.topnav .wrap { display: flex; align-items: center; gap: 6px; height: 56px; overflow-x: auto; scrollbar-width: none; }
+.topnav .logo { font-family: var(--f-display); font-weight: 800; margin-right: auto; white-space: nowrap; padding-right: 12px; }
+.topnav a.nav { text-decoration: none; color: var(--muted); font-size: .85rem; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+.topnav a.nav:hover { color: var(--ink); background: var(--surface-2); }
+.theme-btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; height: 34px; padding: 0 12px; font: inherit; font-size: .85rem; cursor: pointer; margin-left: 6px; }
+
+/* Hero */
+.hero { position: relative; height: 230vh; }
+.hero-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+#hero3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hero-copy { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
+.hero-copy .wrap { height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.hero-text { max-width: 520px; display: grid; gap: 16px; pointer-events: auto; }
+.hero h1 { font-size: clamp(2.3rem, 6vw, 4.2rem); font-weight: 800; line-height: 1; }
+.hero h1 .grad { background: linear-gradient(90deg, var(--l1), var(--l2), var(--l3), var(--l4), var(--l5)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .scroll-hint { font-family: var(--f-mono); font-size: .78rem; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+.hero .scroll-hint .track { width: 120px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.hero .scroll-hint .track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--l1), var(--l5)); }
+.band-labels { position: absolute; inset: 0; pointer-events: none; }
+.band-labels a {
+  position: absolute; transform: translate(0, calc(-100% - 6px)); pointer-events: auto; text-decoration: none; color: var(--ink);
+  display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; white-space: nowrap;
+  background: color-mix(in srgb, var(--surface) 80%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-left: 4px solid var(--c);
+  padding: 4px 10px; border-radius: 8px; transition: opacity .2s;
+}
+.band-labels a small { color: var(--muted); font-weight: 500; font-family: var(--f-mono); font-size: .7rem; }
+@media (max-width: 760px) {
+  .hero-copy .wrap { justify-content: flex-start; padding-top: 90px; }
+  .band-labels a small { display: none; }
+}
+
+/* Level chip */
+.lv { --c: var(--l1); display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); white-space: nowrap; }
+[data-l="1"] { --c: var(--l1); } [data-l="2"] { --c: var(--l2); } [data-l="3"] { --c: var(--l3); } [data-l="4"] { --c: var(--l4); } [data-l="5"] { --c: var(--l5); }
+
+/* Method steps */
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; counter-reset: s; }
+@media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 8px; align-content: start; position: relative; }
+.step::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--f-mono); font-size: .8rem; color: var(--accent); font-weight: 600; }
+.step p { color: var(--muted); font-size: .9rem; }
+
+/* Decision tree */
+.decide { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 860px) { .decide { grid-template-columns: 1fr; } }
+.qlist { display: grid; gap: 0; position: relative; }
+.q { display: grid; grid-template-columns: 36px 1fr; gap: 14px; padding-bottom: 18px; position: relative; }
+.q:not(:last-child)::after { content: ""; position: absolute; left: 17px; top: 36px; bottom: 0; width: 2px; background: var(--line); }
+.q .num { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-mono); font-weight: 600; background: color-mix(in srgb, var(--c) 18%, var(--surface)); color: var(--c); border: 2px solid var(--c); }
+.q .body { display: grid; gap: 4px; padding-top: 4px; }
+.q .ask { font-weight: 600; }
+.q .yes { font-size: .88rem; color: var(--muted); }
+.q .yes b { color: var(--c); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: grid; gap: 12px; }
+.tools { display: grid; gap: 10px; }
+.tool { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.tool b { font-size: .92rem; }
+.tool span.t { color: var(--muted); font-size: .84rem; grid-column: 1 / -1; }
+
+/* Level cards */
+.filter { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter button { font: inherit; font-size: .85rem; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.filter button .d { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ink)); }
+.filter button[aria-pressed="true"] { border-color: var(--c, var(--ink)); background: color-mix(in srgb, var(--c, var(--ink)) 14%, var(--surface)); }
+.levels { display: grid; gap: 18px; }
+.level { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: grid; grid-template-columns: 300px 1fr; scroll-margin-top: 72px; }
+@media (max-width: 860px) { .level { grid-template-columns: 1fr; } }
+.level-side { padding: 22px; display: grid; gap: 14px; align-content: start; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 16%, transparent), transparent 70%); border-right: 1px solid var(--line); }
+@media (max-width: 860px) { .level-side { border-right: 0; border-bottom: 1px solid var(--line); } }
+.level-side .big { font-family: var(--f-display); font-size: 3rem; font-weight: 800; color: var(--c); line-height: 1; }
+.level-side p { color: var(--muted); font-size: .92rem; }
+.meters { display: grid; gap: 8px; }
+.meter { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 10px; font-size: .78rem; color: var(--muted); font-family: var(--f-mono); }
+.meter .bars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.meter .bars i { height: 6px; border-radius: 3px; background: var(--line); }
+.meter .bars i.on { background: var(--c); }
+.level-main { padding: 22px; display: grid; gap: 18px; min-width: 0; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 620px) { .cols { grid-template-columns: 1fr; } }
+.cols h4 { font-size: .8rem; font-family: var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.cols ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+.cols li::marker { color: var(--c); }
+
+.ba { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.ba-tabs { display: flex; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.ba-tabs button { font: inherit; font-size: .82rem; font-weight: 600; background: transparent; color: var(--muted); border: 0; padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+.ba-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--c); }
+.ba-tabs .note { margin-left: auto; padding: 8px 12px; font-size: .78rem; color: var(--muted); }
+pre.code { margin: 0; padding: 14px 16px; background: var(--code-bg); font-family: var(--f-mono); font-size: .8rem; line-height: 1.7; overflow-x: auto; tab-size: 2; }
+.k { color: var(--l5); } .s { color: var(--l1); } .n { color: var(--l3); } .c { color: var(--muted); font-style: italic; } .tg { color: var(--accent); }
+
+/* Matrix */
+.matrix-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .matrix-wrap { grid-template-columns: 1fr; } }
+#matrix { width: 100%; height: auto; display: block; }
+#matrix .quad-label { font-family: var(--f-display); font-weight: 700; font-size: 14px; }
+#matrix .axis { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+#matrix .pt { cursor: pointer; }
+#matrix .pt circle { stroke: var(--surface); stroke-width: 2; transition: r .15s; }
+#matrix .pt text { font-size: 11px; fill: var(--ink); font-family: var(--f-body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+#matrix .pt:hover circle, #matrix .pt:focus circle, #matrix .pt.on circle { r: 10; }
+#matrix .pt:focus { outline: none; }
+#matrix .pt:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.legend-quads { display: grid; gap: 10px; }
+.legend-quads div { padding: 12px 14px; border-radius: 12px; background: var(--surface-2); font-size: .88rem; }
+.legend-quads b { display: block; font-family: var(--f-display); }
+#mxDetail { border-left: 4px solid var(--c, var(--accent)); }
+
+/* Case study */
+.case { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 960px) { .case { grid-template-columns: 1fr; } }
+.code-annot { background: var(--code-bg); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.code-annot .hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-size: .78rem; color: var(--muted); background: var(--surface-2); flex-wrap: wrap; }
+.code-annot .hdr .tabs2 button { font: inherit; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.code-annot .hdr .tabs2 button[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); }
+.annot { margin: 0; padding: 10px 0; font-family: var(--f-mono); font-size: .78rem; line-height: 1.75; overflow-x: auto; counter-reset: ln; }
+.annot .ln { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; padding-right: 10px; border-left: 3px solid transparent; transition: background .15s, opacity .2s; }
+.annot .ln::before { counter-increment: ln; content: counter(ln); color: var(--muted); opacity: .55; text-align: right; padding-right: 14px; font-size: .72rem; }
+.annot .ln > span.src { white-space: pre; }
+.annot .ln.hit { background: color-mix(in srgb, var(--c) 9%, transparent); border-left-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.annot .ln.active { background: color-mix(in srgb, var(--c) 24%, transparent); border-left-color: var(--c); }
+.annot .ln.dim { opacity: .35; }
+.annot .mk { display: inline-flex; gap: 4px; padding-left: 10px; }
+.annot .mk button { font: inherit; font-size: .68rem; font-weight: 700; min-width: 22px; height: 22px; border-radius: 11px; border: 0; cursor: pointer; color: var(--bg); background: var(--c); padding: 0 6px; }
+.issues { display: grid; gap: 10px; max-height: 760px; overflow-y: auto; padding-right: 4px; }
+.issue { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.issue.active { box-shadow: 0 0 0 2px var(--c); }
+.issue .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.issue .id { font-family: var(--f-mono); font-weight: 700; color: var(--c); }
+.issue .ttl { font-weight: 600; }
+.issue p { font-size: .88rem; color: var(--muted); }
+.issue p b { color: var(--ink); font-weight: 600; }
+.score { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.score div { padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--c) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); text-align: center; }
+.score b { display: block; font-family: var(--f-display); font-size: 1.5rem; color: var(--c); line-height: 1.1; }
+.score span { font-size: .72rem; font-family: var(--f-mono); color: var(--muted); }
+@media (max-width: 520px) { .score { grid-template-columns: repeat(3, 1fr); } }
+
+/* Checklist */
+.checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.checklist fieldset { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 14px; background: var(--surface); padding: 14px 16px; margin: 0; display: grid; gap: 6px; min-width: 0; }
+.checklist legend { font-family: var(--f-display); font-weight: 700; padding: 0 4px; }
+.checklist label { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; cursor: pointer; padding: 4px 0; }
+.checklist input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--c); flex: none; }
+.checklist input:checked + span { color: var(--muted); text-decoration: line-through; }
+.cl-progress { display: flex; align-items: center; gap: 12px; font-family: var(--f-mono); font-size: .85rem; color: var(--muted); }
+.cl-progress .bar { flex: 1; height: 6px; background: var(--line); border-radius: 6px; overflow: hidden; max-width: 320px; }
+.cl-progress .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--l1), var(--l5)); transition: width .3s; }
+.btn-ghost { font: inherit; font-size: .82rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+
+footer { padding: 80px 0 48px; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<nav class="topnav" id="topnav" aria-label="Sections">
+  <div class="wrap">
+    <span class="logo">Messy&nbsp;React</span>
+    <a class="nav" href="#method">Method</a>
+    <a class="nav" href="#identify">Identify</a>
+    <a class="nav" href="#levels">5 Levels</a>
+    <a class="nav" href="#prioritize">Prioritize</a>
+    <a class="nav" href="#case">Case study</a>
+    <a class="nav" href="#checklist">Checklist</a>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle colour theme">◐</button>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-sticky">
+    <canvas id="hero3d" aria-hidden="true"></canvas>
+    <div class="band-labels" id="bandLabels"></div>
+    <div class="hero-copy">
+      <div class="wrap">
+        <div class="hero-text">
+          <p class="eyebrow">Problem 3 · Field guide</p>
+          <h1>Untangling <span class="grad">messy React</span></h1>
+          <p class="lede" id="heroLede">Every messy component looks like spaghetti at first. Scroll, and watch the same mess sort itself into five layers — from a two-minute lint fix to an architectural rewrite.</p>
+          <div class="scroll-hint" aria-hidden="true"><span id="heroState">scroll to untangle</span><span class="track"><i id="heroTrack"></i></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- METHOD -->
+  <section class="block" id="method" aria-labelledby="h-method">
+    <div class="sec-head">
+      <p class="eyebrow">01 · The method</p>
+      <h2 id="h-method">Don't refactor on sight. Triage first.</h2>
+      <p class="lede">Messy code invites you to rewrite everything at once — that is how regressions are born. Work in five deliberate passes.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Read</h3><p>Skim the whole file once without touching it. Write down what it is <em>supposed</em> to do, in one sentence.</p></div>
+      <div class="step"><h3>Pin behaviour</h3><p>Run it. Add a quick test or snapshot around the current output so you'll notice if you change it by accident.</p></div>
+      <div class="step"><h3>Classify</h3><p>List every smell and tag it L1–L5 using the questions below. Count them — that's your scorecard.</p></div>
+      <div class="step"><h3>Fix in layers</h3><p>L1 → L5, one commit per layer. Cheap, safe changes first shrink the noise so the deep problems become visible.</p></div>
+      <div class="step"><h3>Verify</h3><p>Tests green, Profiler shows fewer renders, lint is clean. Then explain each change in the PR in one line.</p></div>
+    </div>
+  </section>
+
+  <!-- IDENTIFY -->
+  <section class="block" id="identify" aria-labelledby="h-identify">
+    <div class="sec-head">
+      <p class="eyebrow">02 · Identify & classify</p>
+      <h2 id="h-identify">Five questions sort any smell</h2>
+      <p class="lede">Ask them in order — the first “yes” is the level. It works because each question is about a bigger blast radius than the last.</p>
+    </div>
+    <div class="decide">
+      <div class="qlist">
+        <div class="q" data-l="2"><span class="num">L2</span><div class="body"><span class="ask">Does it give a wrong result, crash, or warn in the console?</span><span class="yes">Yes → <b>Correctness bug</b>. Undefined variables, inverted conditions, bad keys, mutated state.</span></div></div>
+        <div class="q" data-l="3"><span class="num">L3</span><div class="body"><span class="ask">Is the output right, but it re-renders or recomputes too much?</span><span class="yes">Yes → <b>Render performance</b>. Wrong memo deps, unstable props, repeated work.</span></div></div>
+        <div class="q" data-l="4"><span class="num">L4</span><div class="body"><span class="ask">Is the same truth stored twice, or synced with an effect?</span><span class="yes">Yes → <b>State &amp; effects</b>. Derived state, races, stale closures, missing cleanup.</span></div></div>
+        <div class="q" data-l="5"><span class="num">L5</span><div class="body"><span class="ask">Does the file do more than one job, or is it impossible to test?</span><span class="yes">Yes → <b>Architecture</b>. God components, fetching + logic + UI fused together.</span></div></div>
+        <div class="q" data-l="1"><span class="num">L1</span><div class="body"><span class="ask">None of the above, but it's hard to read?</span><span class="yes">→ <b>Hygiene</b>. Naming, dead code, <code>any</code>, magic numbers, stray logs.</span></div></div>
+      </div>
+      <div class="card">
+        <h3>Let the tools find them for you</h3>
+        <div class="tools">
+          <div class="tool"><b>ESLint + react-hooks</b><span class="lv" data-l="2">L1–L4</span><span class="t"><code>exhaustive-deps</code>, <code>rules-of-hooks</code>, <code>react/jsx-key</code>, <code>no-unused-vars</code> catch a third of all smells in seconds.</span></div>
+          <div class="tool"><b>TypeScript strict</b><span class="lv" data-l="2">L1–L2</span><span class="t"><code>strict: true</code> + <code>noImplicitAny</code> surface undefined names, missing fields and lying types.</span></div>
+          <div class="tool"><b>React StrictMode</b><span class="lv" data-l="4">L4</span><span class="t">Double-invokes effects in dev, so missing cleanups and impure renders show up immediately.</span></div>
+          <div class="tool"><b>DevTools Profiler</b><span class="lv" data-l="3">L3</span><span class="t">“Highlight updates” and the flame chart show what re-renders and why.</span></div>
+          <div class="tool"><b>Line count &amp; imports</b><span class="lv" data-l="5">L5</span><span class="t">300+ lines, 15+ imports, or both <code>fetch</code> and <code>&lt;svg&gt;</code> in one file is an architecture smell.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEVELS -->
+  <section class="block" id="levels" aria-labelledby="h-levels">
+    <div class="sec-head">
+      <p class="eyebrow">03 · The five levels, easy → hard</p>
+      <h2 id="h-levels">What each layer looks like — and the fix</h2>
+    </div>
+    <div class="filter" role="group" aria-label="Show level" id="levelFilter"></div>
+    <div class="levels" id="levelList"></div>
+  </section>
+
+  <!-- PRIORITIZE -->
+  <section class="block" id="prioritize" aria-labelledby="h-prio">
+    <div class="sec-head">
+      <p class="eyebrow">04 · Prioritize</p>
+      <h2 id="h-prio">Impact vs effort: pick quick wins first</h2>
+      <p class="lede">Easy-to-hard is the order of <em>difficulty</em>. When time is short, plot each smell and take the top-left quadrant before anything else. Select a dot for details.</p>
+    </div>
+    <div class="matrix-wrap">
+      <div class="card" style="padding:12px"><svg id="matrix" viewBox="0 0 640 420" role="group" aria-label="Impact versus effort chart of common React smells"></svg></div>
+      <div class="legend-quads">
+        <div class="card" id="mxDetail" aria-live="polite"><b>Select a dot</b><span style="color:var(--muted);font-size:.88rem">Each smell is coloured by level.</span></div>
+        <div><b>↖ Quick wins</b>Low effort, high impact. Do today.</div>
+        <div><b>↗ Big bets</b>High impact, real effort. Plan them, ticket them.</div>
+        <div><b>↙ Fill-ins</b>Cheap and minor. Batch with other work.</div>
+        <div><b>↘ Think twice</b>Expensive, little payoff. Usually skip.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CASE STUDY -->
+  <section class="block" id="case" aria-labelledby="h-case">
+    <div class="sec-head">
+      <p class="eyebrow">05 · Worked example</p>
+      <h2 id="h-case">One messy component, sixteen smells</h2>
+      <p class="lede">A typical “it works on my machine” list view. Every numbered marker is one finding. Select a marker or a card to link them; filter by level to see a single layer.</p>
+    </div>
+    <div class="score" id="score"></div>
+    <div class="filter" role="group" aria-label="Filter findings by level" id="caseFilter"></div>
+    <div class="case">
+      <div class="code-annot">
+        <div class="hdr">
+          <span id="caseFile">OrderList.tsx — before</span>
+          <span class="tabs2" role="group" aria-label="Code version">
+            <button type="button" data-v="before" aria-pressed="true">Before</button>
+            <button type="button" data-v="after" aria-pressed="false">After</button>
+          </span>
+        </div>
+        <pre class="annot" id="annot"></pre>
+      </div>
+      <div class="issues" id="issues"></div>
+    </div>
+  </section>
+
+  <!-- CHECKLIST -->
+  <section class="block" id="checklist" aria-labelledby="h-check">
+    <div class="sec-head">
+      <p class="eyebrow">06 · Take it with you</p>
+      <h2 id="h-check">Review checklist</h2>
+      <p class="lede">Run through it on your next messy PR. Ticks are saved in this browser only.</p>
+    </div>
+    <div class="cl-progress"><span id="clText">0 / 0</span><span class="bar"><i id="clBar"></i></span><button class="btn-ghost" id="clReset" type="button">Reset</button></div>
+    <div class="checklist" id="clList"></div>
+  </section>
+
+  <footer>Problem 3 · Built with three.js. The hero lines are the same 75 “smells”, re-arranged by scroll.</footer>
+</main>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const root = document.documentElement;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const css = (v) => getComputedStyle(root).getPropertyValue(v).trim();
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const store = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+// ---------- Data ----------
+const LEVELS = [
+  { l: 1, name: 'Hygiene', diff: 1, risk: 1, blurb: 'Noise that hides the real problems. Mostly auto-fixable and safe to change.',
+    spot: ['Unused imports, vars and props', '<code>any</code> everywhere, empty interfaces', '<code>console.log</code> left in handlers', 'Magic numbers / strings', 'Names like <code>data2</code>, <code>x</code>, <code>handle</code>'],
+    fix: ['Run <code>eslint --fix</code> and Prettier', 'Turn on TS <code>strict</code>', 'Name constants; use union types', 'Delete, don\'t comment out'],
+    before: `import { useState, useEffect } from 'react';
+
+const List = (props: any) => {
+  console.log('render', props);
+  const x = props.items.filter((i: any) => i.s == 2);
+  return <ul>{x.map(r => <li>{r.n}</li>)}</ul>;
+};`,
+    after: `type Item = { id: string; name: string; status: Status };
+
+function ActiveList({ items }: { items: Item[] }) {
+  const active = items.filter((i) => i.status === 'active');
+  return <ul>{active.map((i) => <li key={i.id}>{i.name}</li>)}</ul>;
+}` },
+  { l: 2, name: 'Correctness bugs', diff: 2, risk: 3, blurb: 'The output is wrong or it crashes — often only for some data. Fix with a test that fails first.',
+    spot: ['Variables that are never declared', 'Filter / if logic that keeps the wrong items', 'Sort comparators that don\'t return a number', '<code>key={index}</code> on reorderable lists', 'Mutating props or state (<code>arr.sort()</code>)'],
+    fix: ['Write the failing test, then fix', '<code>(a, b) => b.p - a.p</code> comparators', 'Stable ids as keys', 'Copy before sort: <code>[...arr].sort()</code>'],
+    before: `items.sort((a, b) => {
+  if (a.priority > b.priority) return -1;
+  else if (b.priority > a.priority) return 1;
+}); // mutates props, returns undefined on ties
+
+{items.map((it, i) => <Row key={i} {...it} />)}`,
+    after: `const sorted = [...items].sort((a, b) => b.priority - a.priority);
+
+{sorted.map((it) => <Row key={it.id} {...it} />)}` },
+  { l: 3, name: 'Render performance', diff: 3, risk: 2, blurb: 'Correct but wasteful. Measure with the Profiler before and after — never optimise by feel.',
+    spot: ['<code>useMemo</code> deps with unused values (or missing ones)', 'Pure helpers declared inside the component', 'Inline objects / arrows passed to memoised children', 'Several passes over the same array', 'Values computed every render but never used'],
+    fix: ['Hoist pure functions to module scope', 'Exact deps — lint enforces it', 'One pass: filter → sort → map in a memo', '<code>useCallback</code> only where a memo child needs it'],
+    before: `function Prices({ items, rates }) {
+  const weight = (s) => WEIGHTS[s];              // new fn every render
+  const sorted = useMemo(
+    () => items.sort((a, b) => weight(b) - weight(a)),
+    [items, rates],                              // rates unused → extra work
+  );
+  return sorted.map((i) =>
+    <Row key={i.id} style={{ padding: 8 }} onClick={() => pick(i.id)} />);
+}`,
+    after: `const weight = (s: Status) => WEIGHTS[s] ?? -1; // module scope
+const rowStyle = { padding: 8 };
+
+function Prices({ items }) {
+  const sorted = useMemo(() => [...items].sort((a, b) => weight(b) - weight(a)), [items]);
+  const onPick = useCallback((id: string) => pick(id), []);
+  return sorted.map((i) => <Row key={i.id} style={rowStyle} id={i.id} onPick={onPick} />);
+}` },
+  { l: 4, name: 'State & effects', diff: 4, risk: 4, blurb: 'Bugs that appear later: flicker, stale data, races, leaks. The cure is usually less state, not more.',
+    spot: ['<code>useEffect</code> that only calls <code>setState</code> from props', 'The same value stored in two places', 'Fetch without abort → last response wins', 'Intervals / listeners never cleaned up', 'Props drilled 4+ levels'],
+    fix: ['Derive during render instead of syncing', 'Single source of truth; lift or colocate', 'AbortController, or a data lib (TanStack Query, SWR)', 'Always return a cleanup'],
+    before: `const [fullName, setFullName] = useState('');
+useEffect(() => setFullName(first + ' ' + last), [first, last]);
+
+useEffect(() => {
+  fetch('/api/user/' + id).then((r) => r.json()).then(setUser);
+}, [id]); // fast typing → stale user can win`,
+    after: `const fullName = \`\${first} \${last}\`; // derive, don't sync
+
+useEffect(() => {
+  const ctrl = new AbortController();
+  fetch(\`/api/user/\${id}\`, { signal: ctrl.signal })
+    .then((r) => r.json()).then(setUser).catch(() => {});
+  return () => ctrl.abort();             // no race, no leak
+}, [id]);` },
+  { l: 5, name: 'Architecture', diff: 5, risk: 5, blurb: 'The file does everything. Untestable, unreviewable, and every change touches it. Refactor incrementally behind tests.',
+    spot: ['300+ line components', 'Fetching, business rules, formatting and JSX in one place', 'Logic copy-pasted across screens', 'No seams to test without rendering', 'No error / loading boundaries'],
+    fix: ['Extract pure functions → unit test them', 'Custom hooks for data (<code>useOrders</code>)', 'Presentational components take plain props', 'Strangle, don\'t rewrite: one slice per PR'],
+    before: `function Dashboard() {
+  // 600 lines:
+  // auth check, 4 fetches, filter state, date maths,
+  // currency formatting, 3 charts, 2 modals, CSV export…
+}`,
+    after: `function Dashboard() {
+  const { data, error, isLoading } = useDashboardData();     // data
+  const view = useMemo(() => toViewModel(data), [data]);     // pure + tested
+  if (error) return <ErrorState error={error} />;
+  if (isLoading) return <Skeleton />;
+  return <DashboardLayout filters={<Filters />} chart={<Chart data={view} />} />;
+}` },
+];
+
+const SMELLS = [
+  { t: 'Undefined variable', l: 2, e: 6, i: 96, d: 'A ReferenceError in a filter blanks the whole list. One-line fix, huge payoff.' },
+  { t: 'Broken sort comparator', l: 2, e: 12, i: 74, d: 'Missing return on ties gives engine-dependent order. Replace with subtraction.' },
+  { t: 'Inverted filter', l: 2, e: 10, i: 86, d: 'Keeps the rows it should drop. Write the test from the spec, then flip it.' },
+  { t: 'key={index}', l: 2, e: 16, i: 58, d: 'Reordering breaks input state and animations. Use a stable id.' },
+  { t: 'Unused code & imports', l: 1, e: 5, i: 22, d: 'Pure noise; eslint --fix removes most of it.' },
+  { t: 'any → real types', l: 1, e: 34, i: 37, d: 'Moderate effort, but types expose L2 bugs for free.' },
+  { t: 'Wrong memo deps', l: 3, e: 14, i: 44, d: 'Recomputes on unrelated changes, or worse, returns stale values.' },
+  { t: 'Hoist pure helpers', l: 3, e: 8, i: 30, d: 'Moves functions out of render so deps get simpler.' },
+  { t: 'Memo every child', l: 3, e: 52, i: 20, d: 'Wrapping everything in memo/useCallback rarely pays back. Measure first.' },
+  { t: 'Effect-synced state', l: 4, e: 34, i: 66, d: 'Causes a double render and flicker. Derive it during render instead.' },
+  { t: 'Fetch race condition', l: 4, e: 40, i: 84, d: 'Stale responses overwrite fresh ones. Abort, or move to a data library.' },
+  { t: 'Split god component', l: 5, e: 76, i: 70, d: 'Biggest maintainability win, but do it one slice per PR, behind tests.' },
+  { t: 'Rewrite state library', l: 5, e: 92, i: 34, d: 'Swapping Redux for X rarely fixes the actual mess. Usually skip.' },
+];
+
+const BEFORE = `interface Order {
+  id: string;
+  status: string;
+  amount: number;
+}
+interface Props extends BoxProps {}
+
+const OrderList = (props: Props) => {
+  const { children, ...rest } = props;
+  const orders = useOrders();
+  const rates = useRates();
+  const [query, setQuery] = useState('');
+  const [filtered, setFiltered] = useState([]);
+
+  const getWeight = (status: any): number => {
+    switch (status) {
+      case 'urgent': return 3;
+      case 'paid': return 2;
+      case 'pending': return 1;
+      default: return -1;
+    }
+  };
+
+  useEffect(() => {
+    setFiltered(orders.filter((o) => o.name.includes(query)));
+  }, [query]);
+
+  const sorted = useMemo(() => {
+    return orders
+      .filter((o: Order) => {
+        const w = getWeight(o.status);
+        if (weight > -1) {
+          if (o.amount <= 0) return true;
+        }
+        return false;
+      })
+      .sort((a: Order, b: Order) => {
+        if (getWeight(a.status) > getWeight(b.status)) return -1;
+        else if (getWeight(b.status) > getWeight(a.status)) return 1;
+      });
+  }, [orders, rates]);
+
+  const formatted = sorted.map((o: Order) => ({
+    ...o,
+    label: o.amount.toFixed(),
+  }));
+
+  const rows = sorted.map((o: FormattedOrder, index: number) => {
+    const usd = rates[o.currency] * o.amount;
+    return (
+      <OrderRow
+        key={index}
+        amount={o.amount}
+        usd={usd}
+        label={o.label}
+        style={{ padding: 8 }}
+        onClick={() => console.log(o)}
+      />
+    );
+  });
+
+  return <div {...rest}>{rows}</div>;
+};`;
+
+const AFTER = `type Status = 'urgent' | 'paid' | 'pending';
+
+interface Order {
+  id: string;
+  status: Status;
+  amount: number;
+  currency: string;
+}
+interface OrderView extends Order {
+  label: string;
+  usd: number;
+}
+
+// Pure, module-level, unit-testable
+const WEIGHT: Record<Status, number> = { urgent: 3, paid: 2, pending: 1 };
+const getWeight = (s: string) => WEIGHT[s as Status] ?? -1;
+
+export function toOrderViews(orders: Order[], rates: Record<string, number>): OrderView[] {
+  return orders
+    .filter((o) => getWeight(o.status) > -1 && o.amount > 0)
+    .sort((a, b) => getWeight(b.status) - getWeight(a.status))
+    .map((o) => ({
+      ...o,
+      label: o.amount.toFixed(2),
+      usd: (rates[o.currency] ?? 0) * o.amount,
+    }));
+}
+
+// Data hook: one place that knows where orders come from
+function useOrderViews() {
+  const orders = useOrders();
+  const rates = useRates();
+  return useMemo(() => toOrderViews(orders, rates), [orders, rates]);
+}
+
+const rowStyle = { padding: 8 };
+
+export function OrderList(props: BoxProps) {
+  const orders = useOrderViews();
+  const onSelect = useCallback((id: string) => openOrder(id), []);
+
+  return (
+    <div {...props}>
+      {orders.map((o) => (
+        <OrderRow key={o.id} order={o} style={rowStyle} onSelect={onSelect} />
+      ))}
+    </div>
+  );
+}`;
+
+// Findings; `m` is a snippet that locates the line in BEFORE
+const ISSUES = [
+  { m: 'extends BoxProps {}', l: 1, t: 'Empty interface', why: '<code>Props extends BoxProps {}</code> adds nothing.', fix: 'Use <code>BoxProps</code> directly.' },
+  { m: 'children, ...rest', l: 1, t: '<code>children</code> destructured, never used', why: 'Dead variable, and it silently drops children.', fix: 'Remove it; spread all props.' },
+  { m: "useState('')", l: 4, t: 'Unused <code>query</code> / <code>filtered</code> state', why: 'Two pieces of state nobody renders. Each <code>setFiltered</code> still re-renders.', fix: 'Delete. If search is needed, derive it in the memo.' },
+  { m: 'status: any', l: 1, t: '<code>status: any</code>', why: 'Hides typos like <code>\'piad\'</code>.', fix: 'A <code>Status</code> union type.' },
+  { m: 'status: any', l: 3, t: 'Pure helper declared inside the component', why: 'Recreated every render and pulls the component into every memo\'s dependency story.', fix: 'Hoist to module scope; a lookup table is simpler than a switch.' },
+  { m: 'useEffect(() => {', l: 4, t: 'Effect used to sync derived state', why: 'Renders twice; also misses <code>orders</code> in deps, so it goes stale.', fix: 'Derive during render or in <code>useMemo</code>.' },
+  { m: 'o.name', l: 2, t: '<code>o.name</code> doesn\'t exist on Order', why: 'Throws as soon as orders load and query is typed.', fix: 'Type the state; the compiler catches it.' },
+  { m: 'weight > -1', l: 2, t: '<code>weight</code> is not defined', why: 'The variable is <code>w</code>. ReferenceError → the whole list crashes.', fix: 'Use the declared variable (and lint <code>no-undef</code>).' },
+  { m: 'o.amount <= 0', l: 2, t: 'Inverted filter', why: 'Keeps orders with <code>amount &lt;= 0</code> — exactly the ones to hide.', fix: '<code>getWeight(o.status) &gt; -1 &amp;&amp; o.amount &gt; 0</code>' },
+  { m: 'getWeight(b.status)) return -1', l: 2, t: 'Comparator returns <code>undefined</code> on ties', why: 'Inconsistent comparator = unpredictable order across engines.', fix: '<code>getWeight(b.status) - getWeight(a.status)</code>' },
+  { m: '[orders, rates]);', l: 3, t: 'Wrong <code>useMemo</code> deps', why: '<code>rates</code> isn\'t used inside, so it recomputes for nothing.', fix: 'Deps must match exactly what the callback reads.' },
+  { m: 'const formatted', l: 3, t: '<code>formatted</code> is computed and thrown away', why: 'A full extra pass every render, and its result is never used.', fix: 'Merge formatting into the single memoised pipeline.' },
+  { m: 'toFixed()', l: 2, t: '<code>toFixed()</code> drops the cents', why: '<code>12.5.toFixed()</code> is <code>"13"</code>. Money needs 2 decimals.', fix: '<code>toFixed(2)</code> or <code>Intl.NumberFormat</code>.' },
+  { m: 'FormattedOrder', l: 2, t: 'Maps <code>sorted</code> but types it as <code>FormattedOrder</code>', why: '<code>o.label</code> is always undefined; the type annotation lies.', fix: 'Map over the formatted views; let TS infer.' },
+  { m: 'rates[o.currency]', l: 2, t: '<code>rates[o.currency]</code> may be undefined', why: '<code>currency</code> isn\'t on the type; missing rate → <code>NaN</code> on screen.', fix: 'Add the field; default with <code>?? 0</code> or show “—”.' },
+  { m: 'key={index}', l: 2, t: '<code>key={index}</code>', why: 'The list is sorted — index keys make React reuse the wrong rows.', fix: '<code>key={o.id}</code>' },
+  { m: 'style={{', l: 3, t: 'Inline style object and arrow', why: 'New identities every render defeat <code>React.memo</code> on OrderRow.', fix: 'Module-level style; <code>useCallback</code> handler.' },
+  { m: 'console.log', l: 1, t: '<code>console.log</code> as a click handler', why: 'Debug code shipped; the row does nothing for users.', fix: 'Wire the real action.' },
+  { m: 'const OrderList', l: 5, t: 'One component does four jobs', why: 'Fetching, business rules, formatting and rendering fused → nothing is testable in isolation.', fix: 'Pure <code>toOrderViews()</code> + <code>useOrderViews()</code> hook + thin view.' },
+];
+
+// ---------- Tiny TSX highlighter ----------
+const TOKEN = /(\/\/.*$)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|function|return|if|else|interface|type|extends|export|import|from|switch|case|default|new|true|false)\b|\b(\d+(?:\.\d+)?)\b|(<\/?[A-Za-z][\w.]*)/gm;
+function highlight(src) {
+  let out = '', last = 0;
+  src.replace(TOKEN, (m, com, str, kw, num, tag, idx) => {
+    out += esc(src.slice(last, idx));
+    const cls = com ? 'c' : str ? 's' : kw ? 'k' : num ? 'n' : 'tg';
+    out += `<span class="${cls}">${esc(m)}</span>`;
+    last = idx + m.length;
+    return m;
+  });
+  return out + esc(src.slice(last));
+}
+
+// ---------- Theme ----------
+try { const t = store.get('p3-theme'); if (t) root.dataset.theme = t; } catch {}
+$('#themeBtn').addEventListener('click', () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  store.set('p3-theme', root.dataset.theme);
+  hero.recolor();
+});
+
+// ---------- Level cards ----------
+const bars = (n) => `<span class="bars">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+$('#levelList').innerHTML = LEVELS.map((L) => `
+  <article class="level" id="level-${L.l}" data-l="${L.l}" aria-labelledby="lvh-${L.l}">
+    <div class="level-side">
+      <span class="big">L${L.l}</span>
+      <h3 id="lvh-${L.l}">${L.name}</h3>
+      <p>${L.blurb}</p>
+      <div class="meters">
+        <div class="meter"><span>Difficulty</span>${bars(L.diff)}</div>
+        <div class="meter"><span>Risk</span>${bars(L.risk)}</div>
+      </div>
+    </div>
+    <div class="level-main">
+      <div class="cols">
+        <div><h4>How to spot it</h4><ul>${L.spot.map((s) => `<li>${s}</li>`).join('')}</ul></div>
+        <div><h4>How to fix it</h4><ul>${L.fix.map((s) => `<li>${s}</li>`).join('')}</ul></div>
+      </div>
+      <div class="ba">
+        <div class="ba-tabs" role="tablist" aria-label="L${L.l} example">
+          <button role="tab" aria-selected="true" data-v="before" id="ba-${L.l}-b" aria-controls="bap-${L.l}">Before</button>
+          <button role="tab" aria-selected="false" data-v="after" id="ba-${L.l}-a" aria-controls="bap-${L.l}" tabindex="-1">After</button>
+          <span class="note">example</span>
+        </div>
+        <pre class="code" id="bap-${L.l}" role="tabpanel" aria-labelledby="ba-${L.l}-b" tabindex="0">${highlight(L.before)}</pre>
+      </div>
+    </div>
+  </article>`).join('');
+
+$$('.level').forEach((card) => {
+  const L = LEVELS[card.dataset.l - 1];
+  const tabs = $$('[role="tab"]', card);
+  const panel = $('pre', card);
+  const select = (btn, focus) => {
+    tabs.forEach((b) => { const on = b === btn; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
+    panel.innerHTML = highlight(btn.dataset.v === 'before' ? L.before : L.after);
+    panel.setAttribute('aria-labelledby', btn.id);
+    if (focus) btn.focus();
+  };
+  tabs.forEach((b, i) => {
+    b.addEventListener('click', () => select(b));
+    b.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault(); select(tabs[(i + 1) % 2], true);
+    });
+  });
+});
+
+function buildFilter(el, onChange) {
+  const opts = [{ l: 0, name: 'All' }, ...LEVELS];
+  el.innerHTML = opts.map((o) => `<button type="button" aria-pressed="${o.l === 0}" data-f="${o.l}" ${o.l ? `data-l="${o.l}"` : ''}><span class="d"></span>${o.l ? `L${o.l} · ${o.name}` : 'All levels'}</button>`).join('');
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('button', el).forEach((x) => x.setAttribute('aria-pressed', x === b));
+    onChange(+b.dataset.f);
+  });
+}
+buildFilter($('#levelFilter'), (f) => $$('.level').forEach((c) => { c.hidden = f !== 0 && +c.dataset.l !== f; }));
+
+// ---------- Matrix ----------
+(function matrix() {
+  const svg = $('#matrix');
+  const W = 640, H = 420, L = 50, R = 20, T = 20, B = 44;
+  const x = (e) => L + (e / 100) * (W - L - R);
+  const y = (i) => T + (1 - i / 100) * (H - T - B);
+  const midX = x(50), midY = y(50);
+  const NS = 'http://www.w3.org/2000/svg';
+  let html = `
+    <rect x="${L}" y="${T}" width="${midX - L}" height="${midY - T}" fill="var(--l1)" opacity=".08" rx="10"/>
+    <rect x="${midX}" y="${T}" width="${W - R - midX}" height="${midY - T}" fill="var(--accent)" opacity=".06" rx="10"/>
+    <rect x="${L}" y="${midY}" width="${midX - L}" height="${H - B - midY}" fill="var(--muted)" opacity=".05" rx="10"/>
+    <rect x="${midX}" y="${midY}" width="${W - R - midX}" height="${H - B - midY}" fill="var(--l4)" opacity=".06" rx="10"/>
+    <line x1="${midX}" y1="${T}" x2="${midX}" y2="${H - B}" stroke="var(--line)" stroke-dasharray="4 4"/>
+    <line x1="${L}" y1="${midY}" x2="${W - R}" y2="${midY}" stroke="var(--line)" stroke-dasharray="4 4"/>
+    <text class="quad-label" x="${midX - 12}" y="${T + 22}" fill="var(--l1)" text-anchor="end">Quick wins</text>
+    <text class="quad-label" x="${W - R - 12}" y="${T + 22}" fill="var(--accent)" text-anchor="end">Big bets</text>
+    <text class="quad-label" x="${L + 12}" y="${H - B - 12}" fill="var(--muted)">Fill-ins</text>
+    <text class="quad-label" x="${W - R - 12}" y="${H - B - 12}" fill="var(--l4)" text-anchor="end">Think twice</text>
+    <text class="axis" x="${(L + W - R) / 2}" y="${H - 12}" text-anchor="middle">EFFORT →</text>
+    <text class="axis" x="16" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 16 ${(T + H - B) / 2})">IMPACT →</text>`;
+  svg.innerHTML = html;
+  SMELLS.forEach((s, k) => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'pt'); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', `${s.t}, level ${s.l}, effort ${s.e}, impact ${s.i}`);
+    const cx = x(s.e), cy = y(s.i);
+    const right = s.e < 70;
+    g.innerHTML = `<circle cx="${cx}" cy="${cy}" r="7" fill="var(--l${s.l})"/><text x="${cx + (right ? 12 : -12)}" y="${cy + 4}" text-anchor="${right ? 'start' : 'end'}">${esc(s.t)}</text>`;
+    const show = () => {
+      $$('.pt', svg).forEach((p) => p.classList.toggle('on', p === g));
+      const d = $('#mxDetail');
+      d.style.setProperty('--c', `var(--l${s.l})`);
+      d.innerHTML = `<span class="lv" data-l="${s.l}">L${s.l} · ${LEVELS[s.l - 1].name}</span><b>${esc(s.t)}</b><span style="font-size:.9rem;color:var(--muted)">${esc(s.d)}</span>`;
+    };
+    g.addEventListener('click', show); g.addEventListener('focus', show);
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); } });
+    svg.append(g);
+  });
+})();
+
+// ---------- Case study ----------
+(function caseStudy() {
+  const srcLines = BEFORE.split('\n');
+  ISSUES.forEach((it) => { it.line = srcLines.findIndex((s) => s.includes(it.m)) + 1; });
+  // stable ordering by line, then numbering
+  ISSUES.sort((a, b) => a.line - b.line || a.l - b.l).forEach((it, k) => { it.n = k + 1; });
+  const counts = [1, 2, 3, 4, 5].map((l) => ISSUES.filter((i) => i.l === l).length);
+  $('#score').innerHTML = LEVELS.map((L, k) => `<div data-l="${L.l}"><b>${counts[k]}</b><span>L${L.l} ${L.name.split(' ')[0]}</span></div>`).join('');
+  $('#h-case').textContent = `One messy component, ${ISSUES.length} smells`;
+
+  let version = 'before', filter = 0, active = null;
+  const annot = $('#annot'), list = $('#issues');
+
+  function renderCode() {
+    const src = version === 'before' ? BEFORE : AFTER;
+    const lines = highlight(src).split('\n');
+    annot.innerHTML = lines.map((h, k) => {
+      const ln = k + 1;
+      const hits = version === 'before' ? ISSUES.filter((i) => i.line === ln) : [];
+      const top = hits.length ? Math.max(...hits.map((h) => h.l)) : 0;
+      const marks = hits.map((i) => `<button type="button" data-l="${i.l}" data-n="${i.n}" aria-label="Finding ${i.n}: level ${i.l}">${i.n}</button>`).join('');
+      return `<span class="ln${hits.length ? ' hit' : ''}" data-ln="${ln}" ${top ? `data-l="${top}"` : ''}><span class="src">${h || ' '}</span><span class="mk">${marks}</span></span>`;
+    }).join('');
+    $('#caseFile').textContent = `OrderList.tsx — ${version}`;
+    applyState();
+  }
+  function renderList() {
+    list.innerHTML = ISSUES.map((i) => `
+      <button type="button" class="issue" data-l="${i.l}" data-n="${i.n}" ${filter && filter !== i.l ? 'hidden' : ''}>
+        <span class="head"><span class="id">#${i.n}</span><span class="lv" data-l="${i.l}">L${i.l}</span><span class="ttl">${i.t}</span></span>
+        <p>${i.why}</p>
+        <p><b>Fix:</b> ${i.fix}</p>
+      </button>`).join('');
+  }
+  function applyState() {
+    $$('.ln', annot).forEach((row) => {
+      const hits = ISSUES.filter((i) => i.line === +row.dataset.ln);
+      const inFilter = !filter || hits.some((i) => i.l === filter);
+      row.classList.toggle('dim', version === 'before' && !!filter && !inFilter);
+      const isActive = active && version === 'before' && active.line === +row.dataset.ln;
+      row.classList.toggle('active', !!isActive);
+      if (isActive) row.dataset.l = active.l;
+    });
+    $$('.mk button', annot).forEach((b) => { b.hidden = !!filter && +b.dataset.l !== filter; });
+    $$('.issue', list).forEach((c) => {
+      c.hidden = !!filter && +c.dataset.l !== filter;
+      c.classList.toggle('active', !!active && +c.dataset.n === active.n);
+      c.setAttribute('aria-pressed', !!active && +c.dataset.n === active.n);
+    });
+  }
+  function activate(n, from) {
+    active = ISSUES.find((i) => i.n === n);
+    if (version !== 'before') setVersion('before');
+    applyState();
+    const behavior = reduceMotion ? 'auto' : 'smooth';
+    if (from === 'code') $(`.issue[data-n="${n}"]`, list)?.scrollIntoView({ block: 'nearest', behavior });
+    if (from === 'list') $(`.ln[data-ln="${active.line}"]`, annot)?.scrollIntoView({ block: 'nearest', behavior });
+  }
+  function setVersion(v) {
+    version = v;
+    $$('.tabs2 button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === v));
+    renderCode();
+  }
+  annot.addEventListener('click', (e) => { const b = e.target.closest('button[data-n]'); if (b) activate(+b.dataset.n, 'code'); });
+  list.addEventListener('click', (e) => { const b = e.target.closest('.issue'); if (b) activate(+b.dataset.n, 'list'); });
+  $$('.tabs2 button').forEach((b) => b.addEventListener('click', () => setVersion(b.dataset.v)));
+  buildFilter($('#caseFilter'), (f) => { filter = f; if (active && f && active.l !== f) active = null; applyState(); });
+  renderList(); renderCode();
+})();
+
+// ---------- Checklist ----------
+(function checklist() {
+  const groups = [
+    { l: 1, name: 'Hygiene', items: ['Lint and format pass with zero warnings', 'No any, no empty interfaces', 'No console.log / commented-out code', 'Constants named, no magic values'] },
+    { l: 2, name: 'Correctness', items: ['Every variable is declared and typed', 'Filters / conditions match the spec (test it)', 'Sort comparators return numbers; arrays copied first', 'Lists keyed by stable ids', 'Missing data handled (?? fallback, empty state)'] },
+    { l: 3, name: 'Performance', items: ['Memo deps match exactly what is read', 'Pure helpers live outside components', 'No values computed but unused', 'Profiler: no needless re-renders on interaction'] },
+    { l: 4, name: 'State & effects', items: ['No effect that only mirrors props into state', 'One source of truth per value', 'Fetches abort or use a data library', 'Every subscription/timer has a cleanup'] },
+    { l: 5, name: 'Architecture', items: ['Business logic is a pure, tested function', 'Data access lives in a hook', 'View components take plain props', 'Errors and loading have boundaries'] },
+  ];
+  const saved = store.get('p3-check') || {};
+  $('#clList').innerHTML = groups.map((g) => `
+    <fieldset data-l="${g.l}"><legend>L${g.l} · ${g.name}</legend>
+      ${g.items.map((it, k) => { const id = `cl-${g.l}-${k}`; return `<label for="${id}"><input type="checkbox" id="${id}" ${saved[id] ? 'checked' : ''}><span>${esc(it)}</span></label>`; }).join('')}
+    </fieldset>`).join('');
+  const update = () => {
+    const boxes = $$('#clList input');
+    const done = boxes.filter((b) => b.checked).length;
+    $('#clText').textContent = `${done} / ${boxes.length}`;
+    $('#clBar').style.width = `${(done / boxes.length) * 100}%`;
+    store.set('p3-check', Object.fromEntries(boxes.map((b) => [b.id, b.checked])));
+  };
+  $('#clList').addEventListener('change', update);
+  $('#clReset').addEventListener('click', () => { $$('#clList input').forEach((b) => { b.checked = false; }); update(); });
+  update();
+})();
+
+// ---------- Nav background ----------
+const nav = $('#topnav');
+const onScrollNav = () => nav.classList.toggle('solid', scrollY > innerHeight * 1.2);
+addEventListener('scroll', onScrollNav, { passive: true }); onScrollNav();
+
+// ---------- Hero: spaghetti → five layers ----------
+const hero = (() => {
+  const canvas = $('#hero3d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 13);
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const N = 75, P = 56;
+  const BAND_Y = [-2.6, -1.3, 0, 1.3, 2.6]; // L1 bottom → L5 top
+  const rand = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
+  const lines = [];
+  const mats = [];
+  for (let k = 0; k < N; k++) {
+    const level = k % 5;
+    // Tangled: a smooth random curve inside a ball
+    const ctrl = Array.from({ length: 7 }, () => new THREE.Vector3((rand() - 0.5) * 6, (rand() - 0.5) * 5, (rand() - 0.5) * 5));
+    const curve = new THREE.CatmullRomCurve3(ctrl, false, 'centripetal');
+    const tangled = curve.getPoints(P - 1);
+    // Clean: a gently waving line in its level's band
+    const slot = Math.floor(k / 5);
+    const yOff = (slot / (N / 5 - 1) - 0.5) * 0.7;
+    const z = (rand() - 0.5) * 1.2;
+    const phase = rand() * Math.PI * 2;
+    const clean = Array.from({ length: P }, (_, j) => {
+      const u = j / (P - 1);
+      return new THREE.Vector3(u, BAND_Y[level] + yOff + Math.sin(u * 6 + phase) * 0.05, z);
+    });
+    const geo = new LineGeometry();
+    geo.setPositions(new Float32Array(P * 3));
+    const mat = new LineMaterial({ linewidth: 2, transparent: true, opacity: 0.85, worldUnits: false });
+    mats.push({ mat, level });
+    const line = new Line2(geo, mat);
+    line.frustumCulled = false;
+    group.add(line);
+    lines.push({ geo, tangled, clean, level, delay: rand() * 0.25 });
+  }
+
+  function recolor() {
+    const cols = [1, 2, 3, 4, 5].map((l) => new THREE.Color(css(`--l${l}`)));
+    mats.forEach(({ mat, level }) => mat.color.copy(cols[level]));
+  }
+
+  // Band labels (DOM links over the canvas)
+  const labelEl = $('#bandLabels');
+  labelEl.innerHTML = LEVELS.map((L) => `<a href="#level-${L.l}" data-l="${L.l}" style="--c:var(--l${L.l})" tabindex="-1">L${L.l} · ${L.name} <small>${'●'.repeat(L.diff)}${'○'.repeat(5 - L.diff)}</small></a>`).join('');
+  const labelLinks = $$('a', labelEl);
+
+  let X0 = -6, X1 = 6, wide = true;
+  let progress = reduceMotion ? 1 : 0, shown = progress;
+  const tmp = new THREE.Vector3();
+  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  let mouseX = 0, mouseY = 0;
+  addEventListener('pointermove', (e) => { mouseX = e.clientX / innerWidth - 0.5; mouseY = e.clientY / innerHeight - 0.5; }, { passive: true });
+
+  function readScroll() {
+    if (reduceMotion) return;
+    const h = $('.hero');
+    const max = h.offsetHeight - innerHeight;
+    progress = Math.min(1, Math.max(0, scrollY / (max * 0.85)));
+  }
+  addEventListener('scroll', readScroll, { passive: true });
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    // layers take the right part of wide screens (copy sits left) and the full width on phones
+    const halfW = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z * camera.aspect;
+    wide = camera.aspect > 1.2;
+    X0 = wide ? halfW * 0.02 : -halfW * 0.88;
+    X1 = wide ? halfW * 0.9 : halfW * 0.88;
+    group.position.set(wide ? (X0 + X1) / 2 : 0, wide ? 0 : -1.8, 0);
+    camera.updateProjectionMatrix();
+    mats.forEach(({ mat }) => mat.resolution.set(w, h));
+  }
+  new ResizeObserver(resize).observe(canvas);
+
+  let visible = true;
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(canvas);
+
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => {
+    if (!visible) return;
+    const time = clock.getElapsedTime();
+    shown += (progress - shown) * 0.08;
+    const p = shown;
+    for (const ln of lines) {
+      const arr = ln.geo.attributes.instanceStart.data.array; // interleaved [start, end] per segment
+      const wob = 1 - p;
+      let prev = null;
+      for (let j = 0; j < P; j++) {
+        // comb from left to right: points further along the line settle a little later
+        const t = ease(Math.min(1, Math.max(0, p * 1.5 - ln.delay - (j / P) * 0.25)));
+        const a = ln.tangled[j], b = ln.clean[j];
+        tmp.set(
+          a.x + (X0 + b.x * (X1 - X0) - group.position.x - a.x) * t + Math.sin(time * 0.7 + j * 0.3 + ln.delay * 20) * 0.08 * wob,
+          a.y + (b.y - a.y) * t + Math.cos(time * 0.6 + j * 0.25) * 0.08 * wob,
+          a.z + (b.z - a.z) * t,
+        );
+        if (prev) { const o = (j - 1) * 6; arr[o] = prev.x; arr[o + 1] = prev.y; arr[o + 2] = prev.z; arr[o + 3] = tmp.x; arr[o + 4] = tmp.y; arr[o + 5] = tmp.z; }
+        prev = prev ? prev.copy(tmp) : tmp.clone();
+      }
+      ln.geo.attributes.instanceStart.data.needsUpdate = true;
+    }
+    // tangled ball rotates; layers face the camera
+    group.rotation.y = (1 - p) * (time * 0.25) + mouseX * 0.3;
+    group.rotation.x = (1 - p) * 0.3 + mouseY * 0.15;
+    renderer.render(scene, camera);
+
+    // labels follow the bands' right edge
+    const op = Math.max(0, (p - 0.75) / 0.25);
+    const rect = canvas.getBoundingClientRect();
+    labelLinks.forEach((a, k) => {
+      // anchored just above the left end of each band
+      tmp.set(X0 - group.position.x, BAND_Y[k] + 0.42, 0).applyMatrix4(group.matrixWorld).project(camera);
+      const px = (tmp.x * 0.5 + 0.5) * rect.width, py = (-tmp.y * 0.5 + 0.5) * rect.height;
+      a.style.left = `${px}px`; a.style.top = `${py}px`;
+      a.style.opacity = op;
+      a.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
+      a.tabIndex = op > 0.5 ? 0 : -1;
+    });
+    $('#heroTrack').style.width = `${p * 100}%`;
+    $('#heroState').textContent = p > 0.95 ? 'five layers · select one' : 'scroll to untangle';
+  });
+
+  recolor();
+  resize();
+  readScroll();
+  return { recolor };
+})();
+</script>
+</body>
+</html>

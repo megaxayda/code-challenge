@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fancy Form</title>
+<meta name="description" content="An accessible, bilingual (English / Tiếng Việt) sample form covering every HTML input type, with clear validation and jump-to-error.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --ink: #14171f;
+  --muted: #555d6e;
+  --line: #cfd4dd;
+  --line-strong: #8a93a6;
+  --accent: #2f5bea;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6ecfd;
+  --error: #c0262d;
+  --error-soft: #fdecec;
+  --ok: #1d7f45;
+  --ok-soft: #e5f5eb;
+  --warn: #9a5b00;
+  --radius: 10px;
+  --f: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1218; --surface: #171b24; --surface-2: #1f2430; --ink: #e9ecf2; --muted: #a2a9b8; --line: #343b4a; --line-strong: #6b7487;
+    --accent: #7c9cff; --accent-ink: #0f1218; --accent-soft: #1f2a4a; --error: #ff7b7b; --error-soft: #3a1c1f; --ok: #5fd08f; --ok-soft: #16301f; --warn: #f0b04a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1218; --surface: #171b24; --surface-2: #1f2430; --ink: #e9ecf2; --muted: #a2a9b8; --line: #343b4a; --line-strong: #6b7487;
+  --accent: #7c9cff; --accent-ink: #0f1218; --accent-soft: #1f2a4a; --error: #ff7b7b; --error-soft: #3a1c1f; --ok: #5fd08f; --ok-soft: #16301f; --warn: #f0b04a;
+  color-scheme: dark;
+}
+:root[data-size="lg"] { font-size: 118%; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 1rem; line-height: 1.55; }
+h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--accent); }
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; margin: -1px; }
+
+.skip { position: absolute; left: 12px; top: -60px; background: var(--accent); color: var(--accent-ink); padding: 10px 16px; border-radius: 8px; z-index: 100; font-weight: 600; }
+.skip:focus { top: 12px; }
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Top bar */
+.bar {
+  position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.bar-in { max-width: 860px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-weight: 700; margin-right: auto; display: flex; align-items: center; gap: 8px; }
+.brand .logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #9b5de5); display: grid; place-items: center; color: #fff; font-size: .9rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--ink); font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 12px; min-height: 36px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; min-width: 40px; min-height: 40px; padding: 0 12px; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.icon-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+main { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; display: grid; gap: 20px; }
+.intro { display: grid; gap: 8px; }
+.intro h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); }
+.intro p { color: var(--muted); max-width: 60ch; }
+.req-note { font-size: .9rem; color: var(--muted); }
+.req { color: var(--error); font-weight: 700; }
+
+.progress-wrap { display: grid; gap: 6px; }
+.progress-label { font-size: .85rem; color: var(--muted); display: flex; justify-content: space-between; }
+.progress { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+.progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+
+/* Error summary */
+.summary {
+  border: 2px solid var(--error); background: var(--error-soft); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 8px;
+}
+.summary:focus { outline: 3px solid var(--error); outline-offset: 3px; }
+.summary h2 { font-size: 1.1rem; color: var(--error); display: flex; gap: 8px; align-items: center; }
+.summary ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.summary a { color: var(--error); font-weight: 600; text-underline-offset: 3px; }
+
+.success { border: 2px solid var(--ok); background: var(--ok-soft); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 10px; }
+.success h2 { color: var(--ok); font-size: 1.15rem; }
+.success h2:focus { outline: none; }
+.success dl { margin: 0; display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 4px 16px; font-size: .9rem; }
+.success dt { color: var(--muted); }
+.success dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Form */
+form { display: grid; gap: 20px; }
+fieldset.section {
+  margin: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 20px; display: grid; gap: 18px; min-width: 0;
+}
+fieldset.section > legend { padding: 0; float: left; width: 100%; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+fieldset.section > legend + * { clear: both; }
+.step-no { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: .85rem; flex: none; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid .full { grid-column: 1 / -1; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+.field { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.field > label, .group > legend { font-weight: 600; font-size: .95rem; }
+.group { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.group > legend { padding: 0; margin-bottom: 6px; }
+.hint { font-size: .85rem; color: var(--muted); }
+.opt { font-weight: 400; color: var(--muted); font-size: .85rem; }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line-strong);
+  border-radius: 8px; padding: 10px 12px; min-height: 46px; transition: border-color .15s, box-shadow .15s;
+}
+textarea { resize: vertical; min-height: 110px; }
+input:hover, select:hover, textarea:hover { border-color: var(--ink); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+[aria-invalid="true"]:not(fieldset) { border-color: var(--error) !important; background: var(--error-soft) !important; }
+.is-valid { border-color: var(--ok) !important; }
+.with-addon { position: relative; display: flex; }
+.with-addon input { padding-right: 96px !important; }
+.with-addon .addon { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+.prefix { display: flex; }
+.prefix span { display: grid; place-items: center; padding: 0 12px; border: 1.5px solid var(--line-strong); border-right: 0; border-radius: 8px 0 0 8px; background: var(--surface-2); color: var(--muted); font-size: .9rem; }
+.prefix input { border-radius: 0 8px 8px 0 !important; }
+
+.err { color: var(--error); font-size: .88rem; font-weight: 600; display: flex; gap: 6px; align-items: flex-start; }
+.err::before { content: "!"; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--error); color: var(--surface); display: grid; place-items: center; font-size: .75rem; margin-top: 2px; }
+.err:empty { display: none; }
+
+.btn-sm { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; font-size: .82rem; font-weight: 600; border-radius: 6px; padding: 6px 10px; min-height: 34px; cursor: pointer; }
+
+/* Password strength */
+.meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.meter i { height: 5px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--line); }
+.meter[data-score="1"] i:nth-child(-n+1) { background: var(--error); border-color: var(--error); }
+.meter[data-score="2"] i:nth-child(-n+2) { background: var(--warn); border-color: var(--warn); }
+.meter[data-score="3"] i:nth-child(-n+3) { background: var(--accent); border-color: var(--accent); }
+.meter[data-score="4"] i { background: var(--ok); border-color: var(--ok); }
+.rules { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: .82rem; color: var(--muted); }
+.rules li::before { content: "○ "; }
+.rules li.met { color: var(--ok); }
+.rules li.met::before { content: "✓ "; }
+
+/* Choice controls */
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; }
+.choice input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.choice span {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--line-strong);
+  border-radius: 999px; background: var(--surface); font-size: .92rem; transition: background .15s, border-color .15s;
+}
+.choice input[type="checkbox"] + span::before { content: ""; width: 16px; height: 16px; border: 1.5px solid var(--line-strong); border-radius: 4px; flex: none; }
+.choice input[type="radio"] + span::before { content: ""; width: 16px; height: 16px; border: 1.5px solid var(--line-strong); border-radius: 50%; flex: none; }
+.choice input:checked + span { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.choice input[type="checkbox"]:checked + span::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--accent-soft); }
+.choice input[type="radio"]:checked + span::before { border-color: var(--accent); box-shadow: inset 0 0 0 4px var(--accent-soft); background: var(--accent); }
+.choice input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.choice input:hover + span { border-color: var(--ink); }
+.group[aria-invalid="true"] .choice span { border-color: var(--error); }
+
+/* Segmented radio */
+.segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1.5px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+.segmented label { position: relative; }
+.segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; width: 100%; height: 100%; }
+.segmented span { display: grid; place-items: center; min-height: 46px; padding: 6px 8px; font-size: .9rem; font-weight: 600; text-align: center; border-left: 1px solid var(--line); }
+.segmented label:first-child span { border-left: 0; }
+.segmented input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.segmented input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: -4px; }
+.group[aria-invalid="true"] .segmented { border-color: var(--error); }
+
+/* Switch */
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; }
+.switch input { appearance: none; -webkit-appearance: none; width: 48px; height: 28px; border-radius: 99px; background: var(--line-strong); position: relative; margin: 0; flex: none; cursor: pointer; transition: background .2s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.switch input:checked { background: var(--ok); }
+.switch input:checked::after { transform: translateX(20px); }
+.switch .s-text { display: grid; }
+.switch .s-text b { font-weight: 600; }
+
+/* Single checkbox (terms) */
+.check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--accent); flex: none; cursor: pointer; }
+.check[data-invalid] input { outline: 2px solid var(--error); outline-offset: 1px; }
+
+/* Range */
+.range-row { display: flex; gap: 12px; align-items: center; }
+.range-row input { flex: 1; accent-color: var(--accent); height: 28px; }
+.range-row output { min-width: 112px; text-align: center; font-weight: 600; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: .9rem; }
+.ticks { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); padding: 0 4px; }
+
+/* Stepper */
+.stepper { display: grid; grid-template-columns: 46px 1fr 46px; }
+.stepper button { border: 1.5px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font-size: 1.2rem; cursor: pointer; }
+.stepper button:first-child { border-radius: 8px 0 0 8px; border-right: 0; }
+.stepper button:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+.stepper input { border-radius: 0 !important; text-align: center; -moz-appearance: textfield; }
+.stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* Colour */
+.color-row { display: flex; gap: 10px; align-items: center; }
+.color-row input[type="color"] { width: 56px; height: 46px; border: 1.5px solid var(--line-strong); border-radius: 8px; padding: 3px; background: var(--surface); cursor: pointer; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatches button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line-strong); cursor: pointer; }
+.color-code { font-family: ui-monospace, Consolas, monospace; font-size: .9rem; color: var(--muted); }
+
+/* Rating */
+.stars { display: inline-flex; flex-direction: row-reverse; justify-content: flex-end; gap: 2px; }
+.stars input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.stars label { font-size: 2rem; line-height: 1; color: var(--line-strong); cursor: pointer; padding: 2px; border-radius: 6px; }
+.stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: #f5a623; }
+.stars input:focus-visible + label { outline: 3px solid var(--accent); }
+.rating-text { font-size: .9rem; color: var(--muted); min-height: 1.4em; }
+
+/* File drop */
+.drop {
+  border: 2px dashed var(--line-strong); border-radius: 12px; padding: 20px; display: flex; gap: 16px; align-items: center; cursor: pointer;
+  background: var(--surface-2); transition: border-color .15s, background .15s; position: relative;
+}
+.drop:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.drop .ico { width: 48px; height: 48px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 1.4rem; flex: none; overflow: hidden; }
+.drop .ico img { width: 100%; height: 100%; object-fit: cover; }
+.drop[data-invalid] { border-color: var(--error); background: var(--error-soft); }
+.drop b { color: var(--accent); }
+
+.counter { font-size: .82rem; color: var(--muted); text-align: right; }
+.counter.near { color: var(--warn); font-weight: 600; }
+.counter.over { color: var(--error); font-weight: 700; }
+
+.actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.btn { font: inherit; font-weight: 600; border-radius: 10px; padding: 12px 22px; min-height: 48px; cursor: pointer; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[aria-busy="true"] { opacity: .7; cursor: progress; }
+.kbd-help { font-size: .82rem; color: var(--muted); margin-left: auto; }
+kbd { font-family: ui-monospace, Consolas, monospace; font-size: .78rem; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+@keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+.shake { animation: shake .4s; }
+footer { max-width: 860px; margin: 0 auto; padding: 0 16px 40px; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to form</a>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand"><span class="logo" aria-hidden="true">✦</span><span data-i18n="brand">Fancy Form</span></div>
+    <div class="seg" role="group" aria-label="Language / Ngôn ngữ">
+      <button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button>
+      <button type="button" data-lang="vi" aria-pressed="false" lang="vi">VI</button>
+    </div>
+    <button type="button" class="icon-btn" id="sizeBtn" aria-pressed="false" data-i18n-attr="aria-label:textSize">A+</button>
+    <button type="button" class="icon-btn" id="themeBtn" data-i18n-attr="aria-label:theme">◐</button>
+  </div>
+</div>
+
+<main id="main" tabindex="-1">
+  <div class="intro">
+    <h1 data-i18n="title">Create your profile</h1>
+    <p data-i18n="lede">A sample form showing every kind of input. Errors are explained in plain words and the form takes you straight to the first one.</p>
+    <p class="req-note"><span data-i18n="reqNote">Fields marked</span> <span class="req" aria-hidden="true">*</span> <span data-i18n="reqNote2">are required.</span></p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label"><span data-i18n="progress">Required fields completed</span><span id="progressText">0 / 0</span></div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar" data-i18n-attr="aria-label:progress"><span></span></div>
+  </div>
+
+  <div class="summary" id="summary" role="alert" tabindex="-1" aria-labelledby="summaryTitle" hidden>
+    <h2 id="summaryTitle"></h2>
+    <p data-i18n="summaryHint">Select an item to jump to that field.</p>
+    <ul id="summaryList"></ul>
+  </div>
+
+  <div class="success" id="success" hidden>
+    <h2 id="successTitle" tabindex="-1" data-i18n="successTitle">✓ Profile submitted</h2>
+    <p data-i18n="successText">Thanks! Here is what we received (nothing is sent anywhere — this is a demo).</p>
+    <dl id="successList"></dl>
+    <div><button class="btn" type="button" id="editAgain" data-i18n="editAgain">Edit again</button></div>
+  </div>
+
+  <form id="form" novalidate>
+    <input type="hidden" name="formVersion" value="1.0">
+
+    <!-- 1. Personal -->
+    <fieldset class="section">
+      <legend><span class="step-no" aria-hidden="true">1</span><span data-i18n="s1">About you</span></legend>
+      <div class="grid">
+        <div class="field full">
+          <label for="fullName"><span data-i18n="fullName">Full name</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="fullName" name="fullName" type="text" autocomplete="name" required minlength="2" maxlength="80" aria-describedby="fullName-hint fullName-err" data-i18n-attr="placeholder:fullNamePh">
+          <p class="hint" id="fullName-hint" data-i18n="fullNameHint">As it appears on your ID.</p>
+          <p class="err" id="fullName-err"></p>
+        </div>
+        <div class="field">
+          <label for="email"><span data-i18n="email">Email</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="email-err" placeholder="name@example.com">
+          <p class="err" id="email-err"></p>
+        </div>
+        <div class="field">
+          <label for="phone"><span data-i18n="phone">Phone</span> <span class="opt" id="phone-opt" data-i18n="optPhone">(required if contact by phone)</span></label>
+          <div class="prefix"><span aria-hidden="true">+84</span>
+            <input id="phone" name="phone" type="tel" autocomplete="tel-national" inputmode="tel" aria-describedby="phone-hint phone-err" placeholder="912 345 678">
+          </div>
+          <p class="hint" id="phone-hint" data-i18n="phoneHint">9–10 digits, Vietnamese number.</p>
+          <p class="err" id="phone-err"></p>
+        </div>
+        <div class="field">
+          <label for="dob"><span data-i18n="dob">Date of birth</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="dob" name="dob" type="date" autocomplete="bday" required aria-describedby="dob-hint dob-err">
+          <p class="hint" id="dob-hint" data-i18n="dobHint">You must be at least 13.</p>
+          <p class="err" id="dob-err"></p>
+        </div>
+        <fieldset class="group" id="gender-group" aria-describedby="gender-err">
+          <legend><span data-i18n="gender">Gender</span> <span class="req" aria-hidden="true">*</span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="gender" value="female" required><span data-i18n="female">Female</span></label>
+            <label class="choice"><input type="radio" name="gender" value="male"><span data-i18n="male">Male</span></label>
+            <label class="choice"><input type="radio" name="gender" value="other"><span data-i18n="other">Other</span></label>
+            <label class="choice"><input type="radio" name="gender" value="na"><span data-i18n="na">Prefer not to say</span></label>
+          </div>
+          <p class="err" id="gender-err"></p>
+        </fieldset>
+      </div>
+    </fieldset>
+
+    <!-- 2. Account -->
+    <fieldset class="section">
+      <legend><span class="step-no" aria-hidden="true">2</span><span data-i18n="s2">Account</span></legend>
+      <div class="grid">
+        <div class="field">
+          <label for="username"><span data-i18n="username">Username</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="username-hint username-err" placeholder="tai_pham">
+          <p class="hint" id="username-hint" data-i18n="usernameHint">3–16 characters: lowercase letters, numbers, underscore.</p>
+          <p class="err" id="username-err"></p>
+        </div>
+        <div class="field">
+          <label for="website"><span data-i18n="website">Website</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="website" name="website" type="url" autocomplete="url" inputmode="url" aria-describedby="website-err" placeholder="https://">
+          <p class="err" id="website-err"></p>
+        </div>
+        <div class="field">
+          <label for="password"><span data-i18n="password">Password</span> <span class="req" aria-hidden="true">*</span></label>
+          <div class="with-addon">
+            <input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pw-rules password-err">
+            <button type="button" class="btn-sm addon" id="pwToggle" aria-controls="password" aria-pressed="false" data-i18n="show">Show</button>
+          </div>
+          <div class="meter" id="pwMeter" data-score="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <ul class="rules" id="pw-rules">
+            <li data-rule="len" data-i18n="ruleLen">8+ characters</li>
+            <li data-rule="num" data-i18n="ruleNum">A number</li>
+            <li data-rule="case" data-i18n="ruleCase">Upper &amp; lower case</li>
+            <li data-rule="sym" data-i18n="ruleSym">A symbol (nice to have)</li>
+          </ul>
+          <p class="sr-only" id="pwStrength" aria-live="polite"></p>
+          <p class="err" id="password-err"></p>
+        </div>
+        <div class="field">
+          <label for="confirm"><span data-i18n="confirm">Confirm password</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" required aria-describedby="confirm-err">
+          <p class="err" id="confirm-err"></p>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- 3. Preferences -->
+    <fieldset class="section">
+      <legend><span class="step-no" aria-hidden="true">3</span><span data-i18n="s3">Preferences</span></legend>
+      <div class="grid">
+        <div class="field">
+          <label for="country"><span data-i18n="country">Country</span> <span class="req" aria-hidden="true">*</span></label>
+          <select id="country" name="country" required autocomplete="country" aria-describedby="country-err">
+            <option value="" data-i18n="choose">— Choose —</option>
+            <option value="VN" data-i18n="cVN">Vietnam</option>
+            <option value="SG" data-i18n="cSG">Singapore</option>
+            <option value="JP" data-i18n="cJP">Japan</option>
+            <option value="US" data-i18n="cUS">United States</option>
+            <option value="OT" data-i18n="cOT">Other</option>
+          </select>
+          <p class="err" id="country-err"></p>
+        </div>
+        <div class="field">
+          <label for="city"><span data-i18n="city">City</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="city" name="city" type="text" list="cities" autocomplete="address-level2" aria-describedby="city-hint">
+          <datalist id="cities"><option value="Hà Nội"><option value="TP. Hồ Chí Minh"><option value="Đà Nẵng"><option value="Singapore"><option value="Tokyo"><option value="New York"></datalist>
+          <p class="hint" id="city-hint" data-i18n="cityHint">Start typing for suggestions.</p>
+        </div>
+        <div class="field">
+          <label for="skill"><span data-i18n="skill">Main skill</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="skill" name="skill" type="search" list="skills" data-i18n-attr="placeholder:skillPh">
+          <datalist id="skills"><option value="JavaScript"><option value="TypeScript"><option value="React"><option value="Go"><option value="Python"><option value="Design"></datalist>
+        </div>
+        <div class="field">
+          <label for="guests"><span data-i18n="guests">Team size</span></label>
+          <div class="stepper">
+            <button type="button" data-step="-1" data-i18n-attr="aria-label:decrease">−</button>
+            <input id="guests" name="guests" type="number" min="1" max="50" value="1" inputmode="numeric" aria-describedby="guests-err">
+            <button type="button" data-step="1" data-i18n-attr="aria-label:increase">+</button>
+          </div>
+          <p class="err" id="guests-err"></p>
+        </div>
+
+        <fieldset class="group full" id="interests-group" aria-describedby="interests-hint interests-err">
+          <legend><span data-i18n="interests">Interests</span> <span class="req" aria-hidden="true">*</span></legend>
+          <p class="hint" id="interests-hint" data-i18n="interestsHint">Pick at least one.</p>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="interests" value="frontend"><span>Frontend</span></label>
+            <label class="choice"><input type="checkbox" name="interests" value="backend"><span>Backend</span></label>
+            <label class="choice"><input type="checkbox" name="interests" value="design"><span data-i18n="iDesign">Design</span></label>
+            <label class="choice"><input type="checkbox" name="interests" value="data"><span data-i18n="iData">Data</span></label>
+            <label class="choice"><input type="checkbox" name="interests" value="devops"><span>DevOps</span></label>
+            <label class="choice"><input type="checkbox" name="interests" value="ai"><span>AI</span></label>
+          </div>
+          <p class="err" id="interests-err"></p>
+        </fieldset>
+
+        <fieldset class="group full" id="contact-group" aria-describedby="contact-err">
+          <legend><span data-i18n="contact">Preferred contact</span> <span class="req" aria-hidden="true">*</span></legend>
+          <div class="segmented">
+            <label><input type="radio" name="contact" value="email" required><span>Email</span></label>
+            <label><input type="radio" name="contact" value="phone"><span data-i18n="byPhone">Phone</span></label>
+            <label><input type="radio" name="contact" value="sms"><span>SMS</span></label>
+            <label><input type="radio" name="contact" value="none"><span data-i18n="none">Don't</span></label>
+          </div>
+          <p class="err" id="contact-err"></p>
+        </fieldset>
+
+        <div class="field full">
+          <label class="switch" for="newsletter">
+            <span class="s-text"><b data-i18n="newsletter">Monthly newsletter</b><span class="hint" data-i18n="newsletterHint">One email a month, unsubscribe any time.</span></span>
+            <input id="newsletter" name="newsletter" type="checkbox" role="switch">
+          </label>
+        </div>
+
+        <div class="field full">
+          <label for="level" data-i18n="level">Experience level</label>
+          <div class="range-row">
+            <input id="level" name="level" type="range" min="0" max="4" step="1" value="2" aria-describedby="levelOut">
+            <output id="levelOut" for="level"></output>
+          </div>
+          <div class="ticks" aria-hidden="true"><span data-i18n="lv0">New</span><span data-i18n="lv4">Expert</span></div>
+        </div>
+
+        <div class="field">
+          <label for="color" data-i18n="color">Favourite colour</label>
+          <div class="color-row">
+            <input id="color" name="color" type="color" value="#2f5bea">
+            <span class="color-code" id="colorCode" aria-hidden="true">#2f5bea</span>
+          </div>
+          <div class="swatches" role="group" data-i18n-attr="aria-label:presets">
+            <button type="button" style="background:#2f5bea" data-color="#2f5bea" aria-label="#2f5bea"></button>
+            <button type="button" style="background:#e5484d" data-color="#e5484d" aria-label="#e5484d"></button>
+            <button type="button" style="background:#30a46c" data-color="#30a46c" aria-label="#30a46c"></button>
+            <button type="button" style="background:#f5a623" data-color="#f5a623" aria-label="#f5a623"></button>
+            <button type="button" style="background:#8e4ec6" data-color="#8e4ec6" aria-label="#8e4ec6"></button>
+          </div>
+        </div>
+
+        <fieldset class="group" aria-describedby="ratingText">
+          <legend><span data-i18n="rating">How did you hear about us — rate it</span> <span class="opt" data-i18n="optional">(optional)</span></legend>
+          <div class="stars">
+            <input type="radio" id="r5" name="rating" value="5"><label for="r5"><span aria-hidden="true">★</span><span class="sr-only" data-i18n="star5">5 stars</span></label>
+            <input type="radio" id="r4" name="rating" value="4"><label for="r4"><span aria-hidden="true">★</span><span class="sr-only" data-i18n="star4">4 stars</span></label>
+            <input type="radio" id="r3" name="rating" value="3"><label for="r3"><span aria-hidden="true">★</span><span class="sr-only" data-i18n="star3">3 stars</span></label>
+            <input type="radio" id="r2" name="rating" value="2"><label for="r2"><span aria-hidden="true">★</span><span class="sr-only" data-i18n="star2">2 stars</span></label>
+            <input type="radio" id="r1" name="rating" value="1"><label for="r1"><span aria-hidden="true">★</span><span class="sr-only" data-i18n="star1">1 star</span></label>
+          </div>
+          <p class="rating-text" id="ratingText"></p>
+        </fieldset>
+      </div>
+    </fieldset>
+
+    <!-- 4. Schedule -->
+    <fieldset class="section">
+      <legend><span class="step-no" aria-hidden="true">4</span><span data-i18n="s4">Book an intro call</span></legend>
+      <div class="grid">
+        <div class="field">
+          <label for="apptDate"><span data-i18n="apptDate">Date</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="apptDate" name="apptDate" type="date" required aria-describedby="apptDate-hint apptDate-err">
+          <p class="hint" id="apptDate-hint" data-i18n="apptDateHint">From tomorrow, weekdays only.</p>
+          <p class="err" id="apptDate-err"></p>
+        </div>
+        <div class="field">
+          <label for="apptTime"><span data-i18n="apptTime">Time</span> <span class="req" aria-hidden="true">*</span></label>
+          <input id="apptTime" name="apptTime" type="time" min="08:00" max="18:00" step="900" required aria-describedby="apptTime-hint apptTime-err">
+          <p class="hint" id="apptTime-hint" data-i18n="apptTimeHint">Between 08:00 and 18:00 (Hanoi time).</p>
+          <p class="err" id="apptTime-err"></p>
+        </div>
+        <div class="field">
+          <label for="backup"><span data-i18n="backup">Backup date &amp; time</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="backup" name="backup" type="datetime-local" aria-describedby="backup-err">
+          <p class="err" id="backup-err"></p>
+        </div>
+        <div class="field">
+          <label for="startMonth"><span data-i18n="startMonth">Available from (month)</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="startMonth" name="startMonth" type="month">
+        </div>
+        <div class="field">
+          <label for="week"><span data-i18n="week">Preferred week</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <input id="week" name="week" type="week">
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- 5. Extras -->
+    <fieldset class="section">
+      <legend><span class="step-no" aria-hidden="true">5</span><span data-i18n="s5">A bit more</span></legend>
+      <div class="grid">
+        <div class="field full">
+          <span class="field-label" style="font-weight:600;font-size:.95rem" id="avatar-label"><span data-i18n="avatar">Profile photo</span> <span class="opt" data-i18n="optional">(optional)</span></span>
+          <div class="drop" id="drop">
+            <span class="ico" id="dropIco" aria-hidden="true">⇪</span>
+            <span><span id="dropText"></span><br><span class="hint" data-i18n="avatarHint">PNG or JPG, up to 2 MB.</span></span>
+            <input id="avatar" name="avatar" type="file" accept="image/png,image/jpeg" aria-labelledby="avatar-label" aria-describedby="dropText avatar-err">
+          </div>
+          <p class="err" id="avatar-err"></p>
+        </div>
+        <div class="field full">
+          <label for="bio"><span data-i18n="bio">Short bio</span> <span class="opt" data-i18n="optional">(optional)</span></label>
+          <textarea id="bio" name="bio" rows="4" maxlength="400" aria-describedby="bio-count bio-err" data-i18n-attr="placeholder:bioPh"></textarea>
+          <p class="counter" id="bio-count" aria-live="polite"></p>
+          <p class="err" id="bio-err"></p>
+        </div>
+        <div class="field full">
+          <label class="check" for="terms" id="termsWrap">
+            <input id="terms" name="terms" type="checkbox" required aria-describedby="terms-err">
+            <span><span data-i18n="terms">I agree to the terms and privacy policy.</span> <span class="req" aria-hidden="true">*</span></span>
+          </label>
+          <p class="err" id="terms-err"></p>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button class="btn primary" type="submit" id="submitBtn" data-i18n="submit">Create profile</button>
+      <button class="btn" type="button" id="resetBtn" data-i18n="reset">Clear form</button>
+      <span class="kbd-help"><kbd>Alt</kbd> + <kbd>E</kbd> <span data-i18n="kbdHelp">jumps to the next error</span></span>
+    </div>
+  </form>
+</main>
+<footer data-i18n="footer">Demo only — no data leaves your browser.</footer>
+<div class="sr-only" aria-live="assertive" id="announcer"></div>
+
+<script>
+(() => {
+  // ---------- Translations ----------
+  const T = {
+    en: {
+      skip: 'Skip to form', brand: 'Fancy Form', textSize: 'Larger text', theme: 'Toggle dark mode',
+      title: 'Create your profile',
+      lede: 'A sample form showing every kind of input. Errors are explained in plain words and the form takes you straight to the first one.',
+      reqNote: 'Fields marked', reqNote2: 'are required.', progress: 'Required fields completed',
+      summaryOne: 'There is 1 problem to fix', summaryMany: 'There are {n} problems to fix', summaryHint: 'Select an item to jump to that field.',
+      successTitle: '✓ Profile submitted', successText: 'Thanks! Here is what we received (nothing is sent anywhere — this is a demo).', editAgain: 'Edit again',
+      s1: 'About you', fullName: 'Full name', fullNamePh: 'e.g. Nguyễn Văn An', fullNameHint: 'As it appears on your ID.',
+      email: 'Email', phone: 'Phone', optPhone: '(required if contact by phone)', phoneHint: '9–10 digits, Vietnamese number.',
+      dob: 'Date of birth', dobHint: 'You must be at least 13.', gender: 'Gender', female: 'Female', male: 'Male', other: 'Other', na: 'Prefer not to say',
+      s2: 'Account', username: 'Username', usernameHint: '3–16 characters: lowercase letters, numbers, underscore.', website: 'Website', optional: '(optional)',
+      password: 'Password', show: 'Show', hide: 'Hide', ruleLen: '8+ characters', ruleNum: 'A number', ruleCase: 'Upper & lower case', ruleSym: 'A symbol (nice to have)',
+      strength: ['', 'Weak password', 'Fair password', 'Good password', 'Strong password'], confirm: 'Confirm password',
+      s3: 'Preferences', country: 'Country', choose: '— Choose —', cVN: 'Vietnam', cSG: 'Singapore', cJP: 'Japan', cUS: 'United States', cOT: 'Other',
+      city: 'City', cityHint: 'Start typing for suggestions.', skill: 'Main skill', skillPh: 'Search a skill…', guests: 'Team size', decrease: 'Decrease', increase: 'Increase',
+      interests: 'Interests', interestsHint: 'Pick at least one.', iDesign: 'Design', iData: 'Data',
+      contact: 'Preferred contact', byPhone: 'Phone', none: "Don't", newsletter: 'Monthly newsletter', newsletterHint: 'One email a month, unsubscribe any time.',
+      level: 'Experience level', levels: ['New', 'Junior', 'Mid-level', 'Senior', 'Expert'], lv0: 'New', lv4: 'Expert',
+      color: 'Favourite colour', presets: 'Preset colours', rating: 'Rate your experience so far',
+      star1: '1 star', star2: '2 stars', star3: '3 stars', star4: '4 stars', star5: '5 stars',
+      ratingWords: ['No rating yet', 'Poor', 'Okay', 'Good', 'Great', 'Excellent!'],
+      s4: 'Book an intro call', apptDate: 'Date', apptDateHint: 'From tomorrow, weekdays only.', apptTime: 'Time', apptTimeHint: 'Between 08:00 and 18:00 (Hanoi time).',
+      backup: 'Backup date & time', startMonth: 'Available from (month)', week: 'Preferred week',
+      s5: 'A bit more', avatar: 'Profile photo', avatarHint: 'PNG or JPG, up to 2 MB.', dropIdle: '<b>Choose a file</b> or drag it here', dropChosen: 'Selected: {name}',
+      bio: 'Short bio', bioPh: 'A sentence or two about you…', bioCount: '{n} / {max} characters', bioLeft: '{n} characters left',
+      terms: 'I agree to the terms and privacy policy.', submit: 'Create profile', reset: 'Clear form', kbdHelp: 'jumps to the next error',
+      footer: 'Demo only — no data leaves your browser.', resetConfirm: 'Clear everything you have typed?', cleared: 'Form cleared.',
+      yes: 'Yes', no: 'No',
+      e: {
+        required: 'Enter your {label}.', choose: 'Choose your {label}.', minLen: '{label} must be at least {n} characters.',
+        email: 'Enter an email like name@example.com.', phone: 'Enter 9–10 digits, e.g. 912 345 678.', phoneNeeded: 'Enter a phone number — you chose to be contacted by phone.',
+        dobFuture: 'Date of birth must be in the past.', dobAge: 'You must be at least 13 years old.',
+        username: 'Use 3–16 lowercase letters, numbers or underscores.', url: 'Enter a full address starting with http:// or https://.',
+        pwWeak: 'Password needs 8+ characters, a number, and upper & lower case letters.', pwMatch: 'Passwords do not match.', confirmReq: 'Type your password again to confirm it.', apptDateReq: 'Choose a date for the call.', apptTimeReq: 'Choose a time for the call.',
+        interests: 'Pick at least one interest.', range: '{label} must be between {min} and {max}.',
+        apptPast: 'Choose a date from tomorrow onward.', apptWeekend: 'Choose a weekday — we are closed on weekends.', apptTime: 'Choose a time between 08:00 and 18:00.',
+        backupPast: 'Backup time must be in the future.', fileType: 'Photo must be a PNG or JPG.', fileSize: 'Photo must be 2 MB or smaller (yours is {size}).',
+        terms: 'You must agree to the terms to continue.', bioLong: 'Bio must be 300 characters or fewer.',
+      },
+    },
+    vi: {
+      skip: 'Đi tới biểu mẫu', brand: 'Fancy Form', textSize: 'Chữ lớn hơn', theme: 'Bật/tắt chế độ tối',
+      title: 'Tạo hồ sơ của bạn',
+      lede: 'Biểu mẫu mẫu với đủ mọi loại trường nhập. Lỗi được giải thích dễ hiểu và biểu mẫu sẽ đưa bạn đến ngay lỗi đầu tiên.',
+      reqNote: 'Các trường có dấu', reqNote2: 'là bắt buộc.', progress: 'Trường bắt buộc đã điền',
+      summaryOne: 'Có 1 lỗi cần sửa', summaryMany: 'Có {n} lỗi cần sửa', summaryHint: 'Chọn một mục để đi tới trường đó.',
+      successTitle: '✓ Đã gửi hồ sơ', successText: 'Cảm ơn bạn! Đây là thông tin chúng tôi nhận được (bản demo — không gửi đi đâu cả).', editAgain: 'Sửa lại',
+      s1: 'Thông tin cá nhân', fullName: 'Họ và tên', fullNamePh: 'VD: Nguyễn Văn An', fullNameHint: 'Ghi đúng như trên giấy tờ tùy thân.',
+      email: 'Email', phone: 'Số điện thoại', optPhone: '(bắt buộc nếu liên hệ qua điện thoại)', phoneHint: '9–10 chữ số, số Việt Nam.',
+      dob: 'Ngày sinh', dobHint: 'Bạn phải từ 13 tuổi trở lên.', gender: 'Giới tính', female: 'Nữ', male: 'Nam', other: 'Khác', na: 'Không muốn nói',
+      s2: 'Tài khoản', username: 'Tên đăng nhập', usernameHint: '3–16 ký tự: chữ thường, số, dấu gạch dưới.', website: 'Trang web', optional: '(không bắt buộc)',
+      password: 'Mật khẩu', show: 'Hiện', hide: 'Ẩn', ruleLen: 'Từ 8 ký tự', ruleNum: 'Có chữ số', ruleCase: 'Có chữ hoa và chữ thường', ruleSym: 'Có ký tự đặc biệt (nên có)',
+      strength: ['', 'Mật khẩu yếu', 'Mật khẩu tạm được', 'Mật khẩu tốt', 'Mật khẩu mạnh'], confirm: 'Nhập lại mật khẩu',
+      s3: 'Sở thích', country: 'Quốc gia', choose: '— Chọn —', cVN: 'Việt Nam', cSG: 'Singapore', cJP: 'Nhật Bản', cUS: 'Hoa Kỳ', cOT: 'Khác',
+      city: 'Thành phố', cityHint: 'Gõ để xem gợi ý.', skill: 'Kỹ năng chính', skillPh: 'Tìm kỹ năng…', guests: 'Quy mô nhóm', decrease: 'Giảm', increase: 'Tăng',
+      interests: 'Lĩnh vực quan tâm', interestsHint: 'Chọn ít nhất một.', iDesign: 'Thiết kế', iData: 'Dữ liệu',
+      contact: 'Cách liên hệ ưu tiên', byPhone: 'Điện thoại', none: 'Không', newsletter: 'Bản tin hàng tháng', newsletterHint: 'Mỗi tháng một email, hủy bất cứ lúc nào.',
+      level: 'Mức kinh nghiệm', levels: ['Mới bắt đầu', 'Junior', 'Trung cấp', 'Senior', 'Chuyên gia'], lv0: 'Mới', lv4: 'Chuyên gia',
+      color: 'Màu yêu thích', presets: 'Màu có sẵn', rating: 'Đánh giá trải nghiệm của bạn',
+      star1: '1 sao', star2: '2 sao', star3: '3 sao', star4: '4 sao', star5: '5 sao',
+      ratingWords: ['Chưa đánh giá', 'Tệ', 'Tạm được', 'Tốt', 'Rất tốt', 'Tuyệt vời!'],
+      s4: 'Đặt lịch gọi giới thiệu', apptDate: 'Ngày', apptDateHint: 'Từ ngày mai, chỉ ngày trong tuần.', apptTime: 'Giờ', apptTimeHint: 'Từ 08:00 đến 18:00 (giờ Hà Nội).',
+      backup: 'Ngày giờ dự phòng', startMonth: 'Có thể bắt đầu từ (tháng)', week: 'Tuần mong muốn',
+      s5: 'Thêm chút nữa', avatar: 'Ảnh đại diện', avatarHint: 'PNG hoặc JPG, tối đa 2 MB.', dropIdle: '<b>Chọn tệp</b> hoặc kéo thả vào đây', dropChosen: 'Đã chọn: {name}',
+      bio: 'Giới thiệu ngắn', bioPh: 'Một vài câu về bạn…', bioCount: '{n} / {max} ký tự', bioLeft: 'Còn {n} ký tự',
+      terms: 'Tôi đồng ý với điều khoản và chính sách bảo mật.', submit: 'Tạo hồ sơ', reset: 'Xóa biểu mẫu', kbdHelp: 'để tới lỗi tiếp theo',
+      footer: 'Chỉ là bản demo — dữ liệu không rời khỏi trình duyệt của bạn.', resetConfirm: 'Xóa toàn bộ nội dung đã nhập?', cleared: 'Đã xóa biểu mẫu.',
+      yes: 'Có', no: 'Không',
+      e: {
+        required: 'Vui lòng nhập {label}.', choose: 'Vui lòng chọn {label}.', minLen: '{label} phải có ít nhất {n} ký tự.',
+        email: 'Nhập email dạng ten@vidu.com.', phone: 'Nhập 9–10 chữ số, VD: 912 345 678.', phoneNeeded: 'Nhập số điện thoại — bạn đã chọn liên hệ qua điện thoại.',
+        dobFuture: 'Ngày sinh phải là ngày trong quá khứ.', dobAge: 'Bạn phải từ 13 tuổi trở lên.',
+        username: 'Dùng 3–16 ký tự gồm chữ thường, số hoặc dấu gạch dưới.', url: 'Nhập địa chỉ đầy đủ bắt đầu bằng http:// hoặc https://.',
+        pwWeak: 'Mật khẩu cần từ 8 ký tự, có chữ số, chữ hoa và chữ thường.', pwMatch: 'Hai mật khẩu không khớp.', confirmReq: 'Nhập lại mật khẩu để xác nhận.', apptDateReq: 'Chọn ngày cho cuộc gọi.', apptTimeReq: 'Chọn giờ cho cuộc gọi.',
+        interests: 'Chọn ít nhất một lĩnh vực.', range: '{label} phải từ {min} đến {max}.',
+        apptPast: 'Chọn ngày từ ngày mai trở đi.', apptWeekend: 'Chọn ngày trong tuần — cuối tuần chúng tôi nghỉ.', apptTime: 'Chọn giờ từ 08:00 đến 18:00.',
+        backupPast: 'Thời gian dự phòng phải ở tương lai.', fileType: 'Ảnh phải là PNG hoặc JPG.', fileSize: 'Ảnh tối đa 2 MB (ảnh của bạn {size}).',
+        terms: 'Bạn cần đồng ý với điều khoản để tiếp tục.', bioLong: 'Phần giới thiệu tối đa 300 ký tự.',
+      },
+    },
+  };
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const form = $('#form');
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  let lang = store.get('p2-lang') || (navigator.language?.startsWith('vi') ? 'vi' : 'en');
+  const t = (key) => key.split('.').reduce((o, k) => o?.[k], T[lang]) ?? key;
+  const fmt = (s, vars = {}) => s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+  const announce = (msg) => { const a = $('#announcer'); a.textContent = ''; setTimeout(() => { a.textContent = msg; }, 30); };
+
+  // ---------- Validation rules ----------
+  // Each rule returns [errorKey, vars] or null. `label` is the lower-cased field label in the current language.
+  const BIO_MAX = 300;
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const parseDate = (v) => { const [y, m, d] = v.split('-').map(Number); return new Date(y, m - 1, d); };
+  const pwChecks = (v) => ({ len: v.length >= 8, num: /\d/.test(v), case: /[a-z]/.test(v) && /[A-Z]/.test(v), sym: /[^A-Za-z0-9]/.test(v) });
+  const val = (name) => form.elements[name]?.value?.trim() ?? '';
+  const checked = (name) => $$(`[name="${name}"]:checked`, form).map((i) => i.value);
+
+  const rules = {
+    fullName: (v) => !v ? ['required'] : v.length < 2 ? ['minLen', { n: 2 }] : null,
+    email: (v) => !v ? ['required'] : !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? ['email'] : null,
+    phone: (v) => {
+      const digits = v.replace(/[\s.-]/g, '').replace(/^0/, '');
+      if (!v) return checked('contact')[0] === 'phone' || checked('contact')[0] === 'sms' ? ['phoneNeeded'] : null;
+      return /^\d{9,10}$/.test(digits) ? null : ['phone'];
+    },
+    dob: (v) => {
+      if (!v) return ['required'];
+      const d = parseDate(v);
+      if (d >= today()) return ['dobFuture'];
+      const limit = today(); limit.setFullYear(limit.getFullYear() - 13);
+      return d > limit ? ['dobAge'] : null;
+    },
+    gender: () => checked('gender').length ? null : ['choose'],
+    username: (v) => !v ? ['required'] : !/^[a-z0-9_]{3,16}$/.test(v) ? ['username'] : null,
+    website: (v) => {
+      if (!v) return null;
+      try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? null : ['url']; } catch { return ['url']; }
+    },
+    password: (v) => { if (!v) return ['required']; const c = pwChecks(v); return c.len && c.num && c.case ? null : ['pwWeak']; },
+    confirm: (v) => !v ? ['confirmReq'] : v !== form.elements.password.value ? ['pwMatch'] : null,
+    country: (v) => v ? null : ['choose'],
+    guests: (v) => { const n = Number(v); return v === '' || !Number.isInteger(n) || n < 1 || n > 50 ? ['range', { min: 1, max: 50 }] : null; },
+    interests: () => checked('interests').length ? null : ['interests'],
+    contact: () => checked('contact').length ? null : ['choose'],
+    apptDate: (v) => {
+      if (!v) return ['apptDateReq'];
+      const d = parseDate(v);
+      if (d <= today()) return ['apptPast'];
+      return d.getDay() === 0 || d.getDay() === 6 ? ['apptWeekend'] : null;
+    },
+    apptTime: (v) => !v ? ['apptTimeReq'] : v < '08:00' || v > '18:00' ? ['apptTime'] : null,
+    backup: (v) => v && new Date(v) <= new Date() ? ['backupPast'] : null,
+    avatar: () => {
+      const f = form.elements.avatar.files[0];
+      if (!f) return null;
+      if (!['image/png', 'image/jpeg'].includes(f.type)) return ['fileType'];
+      return f.size > 2 * 1024 * 1024 ? ['fileSize', { size: `${(f.size / 1048576).toFixed(1)} MB` }] : null;
+    },
+    bio: (v) => v.length > BIO_MAX ? ['bioLong'] : null,
+    terms: () => form.elements.terms.checked ? null : ['terms'],
+  };
+  const REQUIRED = ['fullName', 'email', 'dob', 'gender', 'username', 'password', 'confirm', 'country', 'interests', 'contact', 'apptDate', 'apptTime', 'terms'];
+
+  // Field metadata: the element to focus and the element that carries aria-invalid
+  const fieldInfo = (name) => {
+    const group = $(`#${name}-group`);
+    if (group) return { focusEl: $('input', group), invalidEl: group, labelKey: name };
+    const el = form.elements[name];
+    return { focusEl: el, invalidEl: el, labelKey: name };
+  };
+  const labelText = (name) => t(name);
+
+  const errors = new Map(); // name -> [key, vars]
+  const touched = new Set();
+
+  function renderError(name) {
+    const err = errors.get(name);
+    const errEl = $(`#${name}-err`);
+    const { invalidEl } = fieldInfo(name);
+    const msg = err ? fmt(t(`e.${err[0]}`), { label: labelText(name).toLowerCase(), ...(err[1] || {}) }) : '';
+    if (errEl) errEl.textContent = msg;
+    if (invalidEl) {
+      if (err) invalidEl.setAttribute('aria-invalid', 'true'); else invalidEl.removeAttribute('aria-invalid');
+    }
+    if (name === 'terms') $('#termsWrap').toggleAttribute('data-invalid', !!err);
+    if (name === 'avatar') $('#drop').toggleAttribute('data-invalid', !!err);
+    // green border once a touched required text field is valid
+    const el = form.elements[name];
+    if (el && el.classList && !(el instanceof RadioNodeList)) el.classList.toggle('is-valid', !err && touched.has(name) && !!el.value && el.type !== 'checkbox');
+    return msg;
+  }
+
+  function validate(name) {
+    const rule = rules[name];
+    if (!rule) return true;
+    const r = rule(val(name));
+    if (r) errors.set(name, r); else errors.delete(name);
+    renderError(name);
+    return !r;
+  }
+
+  // Order of fields as they appear in the DOM, used for the summary and "next error"
+  const ORDER = Object.keys(rules).sort((a, b) => {
+    const ea = fieldInfo(a).invalidEl, eb = fieldInfo(b).invalidEl;
+    return ea.compareDocumentPosition(eb) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+  });
+
+  function renderSummary() {
+    const box = $('#summary');
+    const list = ORDER.filter((n) => errors.has(n));
+    if (!list.length) { box.hidden = true; return; }
+    $('#summaryTitle').textContent = list.length === 1 ? t('summaryOne') : fmt(t('summaryMany'), { n: list.length });
+    $('#summaryList').innerHTML = '';
+    list.forEach((name) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `#${fieldInfo(name).focusEl.id || name}`;
+      a.textContent = $(`#${name}-err`).textContent;
+      a.addEventListener('click', (e) => { e.preventDefault(); jumpTo(name); });
+      li.append(a); $('#summaryList').append(li);
+    });
+    box.hidden = false;
+  }
+
+  function jumpTo(name) {
+    const { focusEl, invalidEl } = fieldInfo(name);
+    const target = name === 'avatar' ? $('#drop') : invalidEl.closest('.field, .group') || invalidEl;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    focusEl.focus({ preventScroll: true });
+    target.classList.remove('shake'); void target.offsetWidth; target.classList.add('shake');
+  }
+
+  function updateProgress() {
+    const done = REQUIRED.filter((n) => !rules[n](val(n))).length;
+    const pct = Math.round((done / REQUIRED.length) * 100);
+    $('#progressText').textContent = `${done} / ${REQUIRED.length}`;
+    $('#progressBar').setAttribute('aria-valuenow', pct);
+    $('#progressBar > span').style.width = `${pct}%`;
+  }
+
+  // ---------- Events: validate on blur, re-validate live once shown ----------
+  const nameOf = (el) => el.name;
+  form.addEventListener('focusout', (e) => {
+    const name = nameOf(e.target);
+    if (!rules[name]) return;
+    // for groups, wait until focus leaves the whole group
+    const group = $(`#${name}-group`);
+    setTimeout(() => {
+      if (group && group.contains(document.activeElement)) return;
+      if (val(name) || group || e.target.type === 'checkbox' || touched.has(name)) { touched.add(name); validate(name); }
+      if (!$('#summary').hidden) renderSummary();
+    }, 0);
+  });
+  form.addEventListener('input', (e) => {
+    const name = nameOf(e.target);
+    if (rules[name] && (errors.has(name) || touched.has(name))) { validate(name); if (!$('#summary').hidden) renderSummary(); }
+    if (name === 'password') { updateStrength(); if (touched.has('confirm')) validate('confirm'); }
+    if (name === 'contact' && (touched.has('phone') || errors.has('phone'))) validate('phone');
+    if (name === 'contact') updatePhoneOpt();
+    updateProgress();
+  });
+  form.addEventListener('change', (e) => {
+    const name = nameOf(e.target);
+    if (['gender', 'interests', 'contact', 'terms', 'avatar', 'country', 'dob', 'apptDate', 'apptTime'].includes(name) && (touched.has(name) || errors.has(name) || name === 'avatar')) {
+      touched.add(name); validate(name); if (!$('#summary').hidden) renderSummary();
+    }
+    updateProgress();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    Object.keys(rules).forEach((n) => { touched.add(n); validate(n); });
+    renderSummary();
+    if (errors.size) {
+      const box = $('#summary');
+      announce($('#summaryTitle').textContent);
+      // Move focus to the summary so screen readers read it, then a link jumps to each field.
+      box.focus();
+      box.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      return;
+    }
+    const btn = $('#submitBtn');
+    btn.setAttribute('aria-busy', 'true');
+    setTimeout(() => { btn.removeAttribute('aria-busy'); showSuccess(); }, 500);
+  });
+
+  // Alt+E: jump to the next field with an error (after the focused one)
+  document.addEventListener('keydown', (e) => {
+    if (!(e.altKey && e.key.toLowerCase() === 'e')) return;
+    e.preventDefault();
+    const list = ORDER.filter((n) => errors.has(n));
+    if (!list.length) return;
+    const cur = list.findIndex((n) => fieldInfo(n).invalidEl.contains?.(document.activeElement) || fieldInfo(n).focusEl === document.activeElement);
+    jumpTo(list[(cur + 1) % list.length]);
+  });
+
+  // ---------- Success ----------
+  function showSuccess() {
+    const data = new FormData(form);
+    const rows = [];
+    const add = (k, v) => { if (v) rows.push([k, v]); };
+    add(t('fullName'), data.get('fullName'));
+    add(t('email'), data.get('email'));
+    add(t('phone'), data.get('phone') && `+84 ${data.get('phone')}`);
+    add(t('dob'), data.get('dob'));
+    add(t('gender'), t(data.get('gender')));
+    add(t('username'), data.get('username'));
+    add(t('password'), '•'.repeat(data.get('password').length));
+    add(t('website'), data.get('website'));
+    add(t('country'), t(`c${data.get('country')}`));
+    add(t('city'), data.get('city'));
+    add(t('skill'), data.get('skill'));
+    add(t('guests'), data.get('guests'));
+    add(t('interests'), data.getAll('interests').join(', '));
+    add(t('contact'), data.get('contact'));
+    add(t('newsletter'), data.get('newsletter') ? t('yes') : t('no'));
+    add(t('level'), t('levels')[data.get('level')]);
+    add(t('color'), data.get('color'));
+    add(t('rating'), data.get('rating') && '★'.repeat(+data.get('rating')));
+    add(`${t('apptDate')} · ${t('apptTime')}`, `${data.get('apptDate')} ${data.get('apptTime')}`);
+    add(t('backup'), data.get('backup'));
+    add(t('startMonth'), data.get('startMonth'));
+    add(t('week'), data.get('week'));
+    add(t('avatar'), data.get('avatar')?.name);
+    add(t('bio'), data.get('bio'));
+    $('#successList').innerHTML = '';
+    rows.forEach(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; $('#successList').append(dt, dd); });
+    form.hidden = true;
+    $('#success').hidden = false;
+    $('#successTitle').focus();
+    window.scrollTo({ top: 0 });
+  }
+  $('#editAgain').addEventListener('click', () => { $('#success').hidden = true; form.hidden = false; form.elements.fullName.focus(); });
+
+  // ---------- Widgets ----------
+  function updateStrength() {
+    const v = form.elements.password.value;
+    const c = pwChecks(v);
+    $$('#pw-rules li').forEach((li) => li.classList.toggle('met', c[li.dataset.rule]));
+    const score = v ? Math.max(1, Object.values(c).filter(Boolean).length) : 0;
+    $('#pwMeter').dataset.score = score;
+    $('#pwStrength').textContent = t('strength')[score];
+  }
+  $('#pwToggle').addEventListener('click', (e) => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', on);
+    form.elements.password.type = on ? 'text' : 'password';
+    form.elements.confirm.type = on ? 'text' : 'password';
+    e.currentTarget.textContent = on ? t('hide') : t('show');
+  });
+
+  const updatePhoneOpt = () => {
+    const needed = ['phone', 'sms'].includes(checked('contact')[0]);
+    form.elements.phone.required = needed;
+    $('#phone-opt').innerHTML = needed ? '<span class="req" aria-hidden="true">*</span>' : t('optPhone');
+  };
+
+  $$('.stepper button').forEach((b) => b.addEventListener('click', () => {
+    const inp = form.elements.guests;
+    const n = Math.min(50, Math.max(1, (parseInt(inp.value, 10) || 1) + Number(b.dataset.step)));
+    inp.value = n;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    announce(`${t('guests')}: ${n}`);
+  }));
+
+  const updateLevel = () => {
+    const words = t('levels'); const v = form.elements.level.value;
+    $('#levelOut').textContent = words[v];
+    form.elements.level.setAttribute('aria-valuetext', words[v]);
+  };
+  form.elements.level.addEventListener('input', updateLevel);
+
+  const setColor = (c) => { form.elements.color.value = c; $('#colorCode').textContent = c; };
+  form.elements.color.addEventListener('input', (e) => setColor(e.target.value));
+  $$('.swatches button').forEach((b) => b.addEventListener('click', () => { setColor(b.dataset.color); announce(b.dataset.color); }));
+
+  const updateRating = () => { const r = checked('rating')[0] || 0; $('#ratingText').textContent = t('ratingWords')[r]; };
+  $$('[name="rating"]').forEach((r) => r.addEventListener('change', updateRating));
+
+  const updateBio = () => {
+    const n = form.elements.bio.value.length;
+    const el = $('#bio-count');
+    const left = BIO_MAX - n;
+    el.textContent = left <= 40 && left >= 0 ? fmt(t('bioLeft'), { n: left }) : fmt(t('bioCount'), { n, max: BIO_MAX });
+    el.classList.toggle('near', left <= 40 && left >= 0);
+    el.classList.toggle('over', left < 0);
+    // only let the live region speak near the limit, so typing isn't noisy
+    el.setAttribute('aria-live', left <= 40 ? 'polite' : 'off');
+  };
+  form.elements.bio.addEventListener('input', updateBio);
+
+  // File drop
+  const drop = $('#drop');
+  const avatar = form.elements.avatar;
+  const updateDrop = () => {
+    const f = avatar.files[0];
+    $('#dropText').innerHTML = f ? fmt(t('dropChosen'), { name: f.name.replace(/[<>&]/g, '') }) : t('dropIdle');
+    const ico = $('#dropIco');
+    if (f && f.type.startsWith('image/') && f.size < 8 * 1024 * 1024) {
+      const img = new Image(); img.alt = ''; img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src);
+      ico.replaceChildren(img);
+    } else ico.textContent = '⇪';
+  };
+  avatar.addEventListener('change', updateDrop);
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!e.dataTransfer.files.length) return;
+    avatar.files = e.dataTransfer.files;
+    avatar.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  // Date bounds help native pickers
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  form.elements.dob.max = iso(new Date());
+  const tomorrow = today(); tomorrow.setDate(tomorrow.getDate() + 1);
+  form.elements.apptDate.min = iso(tomorrow);
+
+  $('#resetBtn').addEventListener('click', () => {
+    if (!confirm(t('resetConfirm'))) return;
+    form.reset();
+    errors.clear(); touched.clear();
+    Object.keys(rules).forEach(renderError);
+    $$('.is-valid').forEach((el) => el.classList.remove('is-valid'));
+    $('#summary').hidden = true;
+    setColor('#2f5bea');
+    updateAll();
+    announce(t('cleared'));
+    form.elements.fullName.focus();
+  });
+
+  // ---------- i18n apply ----------
+  function applyLang() {
+    document.documentElement.lang = lang;
+    $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === lang));
+    $$('[data-i18n]').forEach((el) => { const v = t(el.dataset.i18n); if (typeof v === 'string') el.textContent = v; });
+    $$('[data-i18n-attr]').forEach((el) => {
+      el.dataset.i18nAttr.split(';').forEach((pair) => { const [attr, key] = pair.split(':'); el.setAttribute(attr, t(key)); });
+    });
+    document.title = t('brand');
+    $('#pwToggle').textContent = $('#pwToggle').getAttribute('aria-pressed') === 'true' ? t('hide') : t('show');
+    updateAll();
+    errors.forEach((_, n) => renderError(n));
+    if (!$('#summary').hidden) renderSummary();
+  }
+  function updateAll() { updateStrength(); updateLevel(); updateRating(); updateBio(); updateDrop(); updatePhoneOpt(); updateProgress(); }
+
+  $$('[data-lang]').forEach((b) => b.addEventListener('click', () => {
+    lang = b.dataset.lang; store.set('p2-lang', lang); applyLang(); announce(lang === 'vi' ? 'Đã chuyển sang tiếng Việt' : 'Switched to English');
+  }));
+
+  // Theme + text size
+  const root = document.documentElement;
+  const savedTheme = store.get('p2-theme'); if (savedTheme) root.dataset.theme = savedTheme;
+  $('#themeBtn').addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark'; store.set('p2-theme', root.dataset.theme);
+  });
+  if (store.get('p2-size') === 'lg') { root.dataset.size = 'lg'; $('#sizeBtn').setAttribute('aria-pressed', 'true'); }
+  $('#sizeBtn').addEventListener('click', (e) => {
+    const on = root.dataset.size !== 'lg';
+    if (on) root.dataset.size = 'lg'; else delete root.dataset.size;
+    e.currentTarget.setAttribute('aria-pressed', on); store.set('p2-size', on ? 'lg' : '');
+  });
+
+  applyLang();
+})();
+</script>
+</body>
+</html>
